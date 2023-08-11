@@ -45,10 +45,15 @@
     ]
   },
   "dependencies": {
+    "@ant-design/icons": "^5.2.5",
     "antd": "^5",
+    "axios": "^1.4.0",
     "react": "^18",
     "react-dom": "^18",
-    "umi-plugin-extensions": "^1.0.0"
+    "umi-plugin-extensions": "^1.0.1"
+  },
+  "resolutions": {
+    "react-error-overlay": "6.0.9"
   },
   "devDependencies": {
     "@commitlint/cli": "^17",

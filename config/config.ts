@@ -3,8 +3,8 @@ import { defineConfig } from '@umijs/max';
 export default defineConfig({
   plugins: [require.resolve('umi-plugin-extensions')],
   extensions: {
-    name: 'Umi Chrome Extension Template',
-    description: '基于 Umi 的 Chrome 插件开发脚手架',
+    name: '土狗捕捉器',
+    description: '基于 多链浏览器开发 的 Chrome 插件土狗行情插件',
     optionsUI: {
       page: '@/pages/options',
       openInTab: true,
@@ -20,5 +20,10 @@ export default defineConfig({
       48: 'logo/logo@48.png',
       128: 'logo/logo@128.png',
     },
+    host_permissions: ['https://api.vbdg.xyz/v1api/*'],
+    permissions: ['storage', 'contextMenus'],
+  },
+  mpa: {
+    template: './public/template/index.html',
   },
 });
