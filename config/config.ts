@@ -21,7 +21,7 @@ export default defineConfig({
       128: 'logo/logo@128.png',
     },
     host_permissions: ['https://api.vbdg.xyz/v1api/*'],
-    permissions: ['storage', 'contextMenus'],
+    permissions: ['storage', 'contextMenus','notifications'],
   },
   mpa: {
     template: './public/template/index.html',

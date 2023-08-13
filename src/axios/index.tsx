@@ -1,5 +1,6 @@
 import sessionT from '@/utils/session';
 import axios, { Method } from 'axios';
+import fetchAdapter from '@vespaiach/axios-fetch-adapter'
 const baseURL = `https://api.vbdg.xyz/v1api/`;
 
 const data = { token: '' };
@@ -29,9 +30,10 @@ function apiAxios(
       params: method === 'GET' ? params : null,
       data: method === 'POST' ? params : null,
       headers: {
-        ...headers,
         'X-Auth': data.token,
+        ...headers,
       },
+      adapter: fetchAdapter
     })
       .then(({ data }) => {
         /** 额外处理 */

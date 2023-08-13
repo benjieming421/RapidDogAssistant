@@ -9,6 +9,8 @@ import { Button, Image, Input, message, Modal, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
 import styles from './style.less';
+import sessionT from "@/utils/session"
+
 
 interface DataType {
   key: React.Key;
@@ -114,6 +116,9 @@ const Popup = () => {
   //token验证按钮的状态
   const [tokendanger, setTokendanger] = useState(true);
 
+  //实时更新 | 暂停更新
+  const [ssgxType, SetssgxType] = useState(true);
+
   //验证全局提醒
   const [messageApi, contextHolder] = message.useMessage();
   const key = 'updatable';
@@ -132,6 +137,7 @@ const Popup = () => {
 
   //验证验证码
   const validate = async () => {
+    try {
     const capcha = await verifyCaptcha({
       id: verificationImage.id,
       value: verificationImage.value,
@@ -140,20 +146,21 @@ const Popup = () => {
       key,
       type: 'loading',
       content: 'Loading...',
+      duration: 0
     });
     if (capcha?.is_verified) {
       if (!chrome.runtime.lastError) {
         chrome.storage.local.set({ token: capcha.ave_token }, function () {
           console.log('Data saved.', capcha.ave_token);
         });
-        const verifyData = await verifyToken();
+        const verifyData = await verifyToken({'X-Auth': capcha.ave_token});
         if (verifyData?.status == 1) {
           setIsModalOpen(false);
           setTokendanger(false);
           messageApi.open({
             key,
             type: 'success',
-            content: 'Success!',
+            content: '连接成功！',
             duration: 2,
           });
         } else {
@@ -161,35 +168,58 @@ const Popup = () => {
             key,
             type: 'error',
             content: '请联系管理员!',
-            duration: 2,
+            duration: 5,
           });
           setTokendanger(true);
         }
       }
     } else {
       setInputType('error');
+      messageApi.open({
+        key,
+        type: 'error',
+        content: '请联系管理员!',
+        duration: 5,
+      });
     }
-  };
+  }catch (e :any) {
+    messageApi.open({
+      key,
+      type: 'error',
+      content: '请联系管理员!',
+      duration: 5,
+    });
+    setTokendanger(true);
+  }};
 
   useEffect(() => {
     (async () => {
-      let resolut = await verifyToken();
-      console.log(resolut);
+      let verifyData = await verifyToken();
+      if (verifyData?.status == 1) {
+        setTokendanger(false);
+      }
+      const das = await sessionT.get('coinList')
+      console.log(das,'das');
     })();
   }, []);
 
-  // //监听token
-  // useEffect(() => {
-  //   if (!chrome.runtime.lastError) {
-  //     chrome.storage.onChanged.addListener(function (changes, namespace) {
-  //       for (let key in changes) {
-  //         if (key == 'token') {
-  //           let storageResoult = changes[key].newValue;
-  //         }
-  //       }
-  //     });
-  //   }
-  // }, []);
+  //监听coinList ---待更新的coin列表
+  useEffect(() => {
+    if (!chrome.runtime.lastError) {
+      chrome.storage.onChanged.addListener(function (changes, namespace) {
+        for (let key in changes) {
+          if (key == 'coinList-detail') {
+            console.log(changes,'changes local');
+          }
+        }
+      });
+    }
+
+    return ()=>{
+      //页面退出停止监听列表
+      chrome.runtime.sendMessage({'endfetchDataAndUpdate': true});
+    }
+  }, []);
 
   return (
     <div className={styles.app}>
@@ -213,14 +243,33 @@ const Popup = () => {
         />
       </div>
 
-      <Button
-        danger={tokendanger}
-        icon={<PoweroffOutlined />}
-        size={'small'}
-        onClick={() => ejectModal()}
-        style={{ width: '5.3vw', height: '8.3vh' }}
-        type="primary"
-      />
+      <div className={styles.btnarray}>
+        <Button
+          danger={tokendanger}
+          icon={<PoweroffOutlined />}
+          size={'small'}
+          onClick={() => ejectModal()}
+          style={{ width: '5.3vw', height: '8.3vh',marginLeft: '8px' }}
+          type="primary"
+        />
+        
+        <Button
+          danger={ssgxType}
+          size={'small'}
+          onClick={() => {
+            SetssgxType((item:boolean) => {
+              // 默认true为暂停
+              item ? chrome.runtime.sendMessage({'startfetchDataAndUpdate': true})
+              : chrome.runtime.sendMessage({'endfetchDataAndUpdate': true});
+              return !item
+            });
+          }}
+          style={{ height: '8.3vh',marginLeft: '8px' }}
+          type="primary"
+        >
+        {ssgxType ? '实时更新' : '暂停更新'}
+        </Button>
+      </div>
 
       <Modal
         title="验证"
