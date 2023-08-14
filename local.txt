@@ -1,0 +1,5 @@
+本文件是关于local缓存于本地的变量介绍
+
+coinList -- 简单的待请求币列表
+coinList-detail --- 接口返回的币列表，数据很多包含官网、白皮书、logo、价格等
+updateBtn --- 用于监听更新按钮的 Boolean

@@ -4,13 +4,12 @@ import {
   ispositiveAndNegativereturnColor,
   verifyCaptcha,
 } from '@/utils';
+import sessionT from '@/utils/session';
 import { PoweroffOutlined } from '@ant-design/icons';
 import { Button, Image, Input, message, Modal, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
 import styles from './style.less';
-import sessionT from "@/utils/session"
-
 
 interface DataType {
   key: React.Key;
@@ -23,7 +22,6 @@ interface DataType {
 const modeData = {
   name: 'BTCUSDT',
   price: 23044.23,
-  wave: -11.6,
   wavep: -0.36,
 };
 
@@ -117,43 +115,80 @@ const Popup = () => {
   const [tokendanger, setTokendanger] = useState(true);
 
   //实时更新 | 暂停更新
-  const [ssgxType, SetssgxType] = useState(true);
+  const [ssgxType, SetssgxType] = useState(false);
 
   //验证全局提醒
   const [messageApi, contextHolder] = message.useMessage();
   const key = 'updatable';
 
+  useEffect(() => {
+    (async () => {
+      let verifyData = await verifyToken();
+      if (verifyData?.status == 1) {
+        setTokendanger(false);
+      }
+      const updateBtn = await sessionT.get('updateBtn');
+      SetssgxType(updateBtn || false);
+      if (updateBtn == false) SendupdateBtnFun(false);
+    })();
+  }, []);
+
+  //监听coinList ---待更新的coin列表
+  useEffect(() => {
+    if (!chrome.runtime.lastError) {
+      chrome.storage.onChanged.addListener(function (changes, namespace) {
+        for (let key in changes) {
+          if (key == 'coinList-detail') {
+            console.log(changes, 'changes local');
+          }
+        }
+      });
+    }
+
+    return () => {
+      //页面退出停止监听列表
+      chrome.runtime.sendMessage({ endfetchDataAndUpdate: true });
+    };
+  }, []);
+
   //弹出验证码
   const ejectModal = async () => {
-    const capcha = await getCaptcha();
-    console.log(capcha, 'capcha');
-    setVerificationImage({
-      id: capcha.id,
-      image: capcha.image,
-      value: '',
-    });
-    setIsModalOpen(true);
+    try {
+      const capcha = await getCaptcha();
+      console.log(capcha, 'capcha');
+      setVerificationImage({
+        id: capcha.id,
+        image: capcha.image,
+        value: '',
+      });
+      setIsModalOpen(true);
+    } catch (error) {
+      console.log(error);
+      messageApi.open({
+        key,
+        type: 'error',
+        content: '请联系管理员!',
+        duration: 5,
+      });
+    }
   };
 
   //验证验证码
   const validate = async () => {
     try {
-    const capcha = await verifyCaptcha({
-      id: verificationImage.id,
-      value: verificationImage.value,
-    });
-    messageApi.open({
-      key,
-      type: 'loading',
-      content: 'Loading...',
-      duration: 0
-    });
-    if (capcha?.is_verified) {
-      if (!chrome.runtime.lastError) {
-        chrome.storage.local.set({ token: capcha.ave_token }, function () {
-          console.log('Data saved.', capcha.ave_token);
-        });
-        const verifyData = await verifyToken({'X-Auth': capcha.ave_token});
+      const capcha = await verifyCaptcha({
+        id: verificationImage.id,
+        value: verificationImage.value,
+      });
+      messageApi.open({
+        key,
+        type: 'loading',
+        content: 'Loading...',
+        duration: 0,
+      });
+      if (capcha?.is_verified) {
+        await sessionT.set('token', capcha.ave_token);
+        const verifyData = await verifyToken({ 'X-Auth': capcha.ave_token });
         if (verifyData?.status == 1) {
           setIsModalOpen(false);
           setTokendanger(false);
@@ -172,54 +207,32 @@ const Popup = () => {
           });
           setTokendanger(true);
         }
+      } else {
+        setInputType('error');
+        messageApi.open({
+          key,
+          type: 'error',
+          content: '请联系管理员!',
+          duration: 5,
+        });
       }
-    } else {
-      setInputType('error');
+    } catch (e: any) {
       messageApi.open({
         key,
         type: 'error',
         content: '请联系管理员!',
         duration: 5,
       });
+      setTokendanger(true);
     }
-  }catch (e :any) {
-    messageApi.open({
-      key,
-      type: 'error',
-      content: '请联系管理员!',
-      duration: 5,
-    });
-    setTokendanger(true);
-  }};
+  };
 
-  useEffect(() => {
-    (async () => {
-      let verifyData = await verifyToken();
-      if (verifyData?.status == 1) {
-        setTokendanger(false);
-      }
-      const das = await sessionT.get('coinList')
-      console.log(das,'das');
-    })();
-  }, []);
-
-  //监听coinList ---待更新的coin列表
-  useEffect(() => {
-    if (!chrome.runtime.lastError) {
-      chrome.storage.onChanged.addListener(function (changes, namespace) {
-        for (let key in changes) {
-          if (key == 'coinList-detail') {
-            console.log(changes,'changes local');
-          }
-        }
-      });
-    }
-
-    return ()=>{
-      //页面退出停止监听列表
-      chrome.runtime.sendMessage({'endfetchDataAndUpdate': true});
-    }
-  }, []);
+  const SendupdateBtnFun = (updateBtn: any) => {
+    // 默认true为暂停
+    updateBtn
+      ? chrome.runtime.sendMessage({ startfetchDataAndUpdate: true })
+      : chrome.runtime.sendMessage({ endfetchDataAndUpdate: true });
+  };
 
   return (
     <div className={styles.app}>
@@ -249,26 +262,34 @@ const Popup = () => {
           icon={<PoweroffOutlined />}
           size={'small'}
           onClick={() => ejectModal()}
-          style={{ width: '5.3vw', height: '8.3vh',marginLeft: '8px' }}
+          style={{ width: '5.3vw', height: '8.3vh', marginLeft: '8px' }}
           type="primary"
         />
-        
+
         <Button
-          danger={ssgxType}
+          danger={!ssgxType}
           size={'small'}
+          title={
+            !ssgxType
+              ? '点击按钮，数据开始更新！'
+              : '数据实时更新中···，点击按钮暂停'
+          }
           onClick={() => {
-            SetssgxType((item:boolean) => {
-              // 默认true为暂停
-              item ? chrome.runtime.sendMessage({'startfetchDataAndUpdate': true})
-              : chrome.runtime.sendMessage({'endfetchDataAndUpdate': true});
-              return !item
+            SetssgxType((item: boolean) => {
+              SendupdateBtnFun(!item);
+              return !item;
             });
           }}
-          style={{ height: '8.3vh',marginLeft: '8px' }}
+          style={{ height: '8.3vh', marginLeft: '8px' }}
           type="primary"
         >
-        {ssgxType ? '实时更新' : '暂停更新'}
+          {!ssgxType ? '实时更新' : '暂停更新'}
         </Button>
+
+        {/* 
+        <div className={styles.shuaxinbox} title="手动刷新数据">
+          <SyncOutlined spin={false} style={{ fontSize: 20 }} />
+        </div> */}
       </div>
 
       <Modal
@@ -329,13 +350,11 @@ const Card = (data: carprops) => {
   return (
     <div
       className={styles.cardx}
-      style={{ color: ispositiveAndNegativereturnColor(data.wave) }}
+      style={{ color: ispositiveAndNegativereturnColor(data.wavep) }}
     >
       <div className={styles.title}>{data.name}</div>
       <div className={styles.price}>${data.price}</div>
-      <div className={styles.footer}>
-        {data.wave}&nbsp;&nbsp;{data.wavep + '%'}
-      </div>
+      <div className={styles.footer}>{data.wavep + '%'}</div>
     </div>
   );
 };

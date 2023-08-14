@@ -1,14 +1,12 @@
 import sessionT from '@/utils/session';
+import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import axios, { Method } from 'axios';
-import fetchAdapter from '@vespaiach/axios-fetch-adapter'
 const baseURL = `https://api.vbdg.xyz/v1api/`;
 
-const data = { token: '' };
-
-(async () => {
+const tokenReturn = async () => {
   const token = await sessionT.get('token');
-  data.token = token;
-})();
+  return token;
+};
 
 /**
  * 简易封装axios
@@ -30,10 +28,9 @@ function apiAxios(
       params: method === 'GET' ? params : null,
       data: method === 'POST' ? params : null,
       headers: {
-        'X-Auth': data.token,
         ...headers,
       },
-      adapter: fetchAdapter
+      adapter: fetchAdapter,
     })
       .then(({ data }) => {
         /** 额外处理 */
@@ -47,10 +44,14 @@ function apiAxios(
 }
 
 export default {
-  get: function (url: string, params?: any, headers?: any) {
-    return apiAxios('GET', url, params, headers);
+  get: async function (url: string, params?: any, headers?: any) {
+    let token = await tokenReturn();
+    let headersT = { ...headers, 'X-Auth': token };
+    return apiAxios('GET', url, params, headersT);
   },
-  post: function (url: string, params?: any, headers?: any) {
-    return apiAxios('POST', url, params, headers);
+  post: async function (url: string, params?: any, headers?: any) {
+    let token = await tokenReturn();
+    let headersT = { ...headers, 'X-Auth': token };
+    return apiAxios('POST', url, params, headersT);
   },
 };
