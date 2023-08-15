@@ -1,5 +1,6 @@
 export * from './env';
 import axios from '@/axios';
+import dayjs from 'dayjs';
 
 export const getCaptcha = async () => {
   const result = await axios.get('/v1/captcha/getCaptcha');
@@ -37,4 +38,23 @@ export const ispositiveAndNegativereturnColor = (num: number) => {
     : Math.sign(num) === -1
     ? '#f56c6c'
     : '#000';
+};
+
+//把定时器清空
+export const clearTimeoutList = (itemsList: Array<any>) => {
+  if (itemsList.length == 0) return;
+  for (let d of itemsList) {
+    clearTimeout(d);
+  }
+};
+
+//返回当前时间
+export const getNowTime = () => {
+  // return dayjs().format('MM-DD HH:mm:ss.SSS');
+  return dayjs().format('HH:mm');
+};
+
+//延迟函数
+export const delay = (ms: number) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 };

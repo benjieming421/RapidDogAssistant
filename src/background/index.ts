@@ -1,8 +1,9 @@
 import { getToken } from '@/axios/api';
+import { clearTimeoutList, getNowTime } from '@/utils/index';
 import sessionT from '@/utils/session';
 
 //接口循环定时器
-let times: any = null;
+let timesList: any = [];
 //实时更新数据的按钮
 let updateBtn: any = false;
 
@@ -55,12 +56,11 @@ const add = () => {
   );
 };
 
-//不定时循环请求coin接口 10-15秒
-async function fetchDataAndUpdate(apilist?: [], index = 0) {
+//不定时循环请求coin接口 15-20秒
+async function fetchDataAndUpdate(apilist = [], index = 0) {
   if (!updateBtn) return;
-  apilist = (await sessionT.get('coinList')) ?? [];
+  apilist = await sessionT.get('coinList');
   const coinListDetail = (await sessionT.get('coinList-detail')) ?? [];
-
   let lastIndex = index >= apilist.length ? 0 : index;
   try {
     // 发起接口请求
@@ -70,23 +70,27 @@ async function fetchDataAndUpdate(apilist?: [], index = 0) {
     );
     //这段换成储存数据在local
     coinListDetail[lastIndex] = result?.data?.token || {};
-    coinListDetail[lastIndex].time = new Date().getTime();
+    coinListDetail[lastIndex].time = getNowTime();
     await sessionT.set('coinList-detail', coinListDetail);
+    console.log(coinListDetail, `后台的 changes local 更新时间${getNowTime()}`);
+
     // 等待一段时间后再次调用该函数（不定时）
-    const randomDelay = Math.floor(Math.random() * 5000) + 10000; // 10秒到15秒之间的随机延迟
-    times = setTimeout(
-      () => fetchDataAndUpdate(apilist, lastIndex + 1),
-      randomDelay,
-    );
+    const randomDelay = Math.floor(Math.random() * 5000) + 15000; // 15秒到20秒之间的随机延迟
+    let times = setTimeout(() => {
+      fetchDataAndUpdate(apilist, lastIndex + 1);
+      clearTimeout(times);
+    }, randomDelay);
+    timesList.push(times);
   } catch (error) {
     // 处理请求错误
     console.error('Error fetching data:', error);
     // 发生错误时，等待一段时间后再次调用该函数（不定时）
-    const randomDelay = Math.floor(Math.random() * 5000) + 10000; // 10秒到15秒之间的随机延迟
-    times = setTimeout(
-      () => fetchDataAndUpdate(apilist, lastIndex + 1),
-      randomDelay,
-    );
+    const randomDelay = Math.floor(Math.random() * 5000) + 15000; // 15秒到20秒之间的随机延迟
+    let times = setTimeout(() => {
+      fetchDataAndUpdate(apilist, lastIndex + 1);
+      clearTimeout(times);
+    }, randomDelay);
+    timesList.push(times);
     lastIndex += 1;
   }
 }
@@ -97,18 +101,20 @@ chrome.runtime.onMessage.addListener(async function (
   sendResponse,
 ) {
   if (request.startfetchDataAndUpdate) {
+    //循环清除定时器
+    clearTimeoutList(timesList);
     //监听开始请求列表
     updateBtn = true;
     await sessionT.set('updateBtn', updateBtn);
     fetchDataAndUpdate();
-    console.log('监听开始请求列表');
+    console.log('监听开始请求列表', getNowTime());
   } else if (request.endfetchDataAndUpdate) {
     //监听清除请求列表
     updateBtn = false;
     await sessionT.set('updateBtn', updateBtn);
-    clearTimeout(times);
-
-    console.log('结束监听开始请求列表');
+    //循环清除定时器
+    clearTimeoutList(timesList);
+    console.log('结束监听开始请求列表', getNowTime());
   }
 });
 
@@ -142,4 +148,19 @@ if (!chrome.runtime.lastError) {
       );
     }
   });
+
+  chrome.runtime.onConnect.addListener(function (port) {
+    if (port.name === 'popup') {
+      port.onDisconnect.addListener(function () {
+        console.log('popup has been closed', getNowTime());
+        closePopupFun();
+      });
+    }
+  });
 }
+
+//关闭popup页面执行的函数
+const closePopupFun = async () => {
+  //循环清除定时器
+  clearTimeoutList(timesList);
+};

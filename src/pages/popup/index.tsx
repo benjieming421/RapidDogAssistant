@@ -1,6 +1,8 @@
-import { verifyToken } from '@/axios/api';
+import { getToken, verifyToken } from '@/axios/api';
 import {
+  clearTimeoutList,
   getCaptcha,
+  getNowTime,
   ispositiveAndNegativereturnColor,
   verifyCaptcha,
 } from '@/utils';
@@ -8,35 +10,29 @@ import sessionT from '@/utils/session';
 import { PoweroffOutlined } from '@ant-design/icons';
 import { Button, Image, Input, message, Modal, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './style.less';
 
 interface DataType {
   key: React.Key;
-  name: string;
-  price: number;
-  increase: number;
-  date: string;
+  symbol: string;
+  current_price_usd: number;
+  price_change: number;
+  time: string;
 }
-
-const modeData = {
-  name: 'BTCUSDT',
-  price: 23044.23,
-  wavep: -0.36,
-};
 
 const columns: ColumnsType<DataType> = [
   {
     title: '货币',
-    dataIndex: 'name',
+    dataIndex: 'symbol',
   },
   {
     title: '价格',
-    dataIndex: 'price',
+    dataIndex: 'current_price_usd',
   },
   {
     title: '涨跌幅',
-    dataIndex: 'increase',
+    dataIndex: 'price_change',
     align: 'center',
     render: (price) => (
       <div style={{ color: ispositiveAndNegativereturnColor(price) }}>
@@ -46,7 +42,7 @@ const columns: ColumnsType<DataType> = [
   },
   {
     title: '更新时间',
-    dataIndex: 'date',
+    dataIndex: 'time',
     align: 'right',
     width: 80,
   },
@@ -55,45 +51,45 @@ const columns: ColumnsType<DataType> = [
 const data: DataType[] = [
   {
     key: '1',
-    name: 'BTC',
-    price: 32231,
-    increase: -1.67,
-    date: '14:59',
+    symbol: 'BTC',
+    current_price_usd: 32231,
+    price_change: -1.67,
+    time: '14:59',
   },
   {
     key: '2',
-    name: 'ETH',
-    price: 2800,
-    increase: -1.67,
-    date: '14:59',
+    symbol: 'ETH',
+    current_price_usd: 2800,
+    price_change: -1.67,
+    time: '14:59',
   },
   {
     key: '3',
-    name: 'DOGE',
-    price: 0.0232,
-    increase: 1.67,
-    date: '14:59',
+    symbol: 'DOGE',
+    current_price_usd: 0.0232,
+    price_change: 1.67,
+    time: '14:59',
   },
   {
     key: '4',
-    name: 'LUNA',
-    price: 32231,
-    increase: -1.67,
-    date: '14:59',
+    symbol: 'LUNA',
+    current_price_usd: 32231,
+    price_change: -1.67,
+    time: '14:59',
   },
   {
     key: '5',
-    name: 'ATC',
-    price: 2800,
-    increase: -1.67,
-    date: '14:59',
+    symbol: 'ATC',
+    current_price_usd: 2800,
+    price_change: -1.67,
+    time: '14:59',
   },
   {
     key: '6',
-    name: 'X',
-    price: 0.0232,
-    increase: 1.67,
-    date: '14:59',
+    symbol: 'X',
+    current_price_usd: 0.0232,
+    price_change: 1.67,
+    time: '14:59',
   },
 ];
 
@@ -121,15 +117,29 @@ const Popup = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const key = 'updatable';
 
+  //定时器列表
+  const timesListRef: any = useRef([]);
+
+  //首页coin列表信息
+  const [coinContent, setCoinContent] = useState([]);
+
   useEffect(() => {
     (async () => {
-      let verifyData = await verifyToken();
-      if (verifyData?.status == 1) {
-        setTokendanger(false);
+      try {
+        //测试是否联通
+        let verifyData = await verifyToken();
+        if (verifyData?.status == 1) {
+          setTokendanger(false);
+          chrome.runtime.connect({ name: 'popup' });
+          console.log('popup has been open', getNowTime());
+          //打开popup页面默认执行的函数
+          openPopupFun();
+        } else {
+          ejectModal();
+        }
+      } catch (error) {
+        ejectModal();
       }
-      const updateBtn = await sessionT.get('updateBtn');
-      SetssgxType(updateBtn || false);
-      if (updateBtn == false) SendupdateBtnFun(false);
     })();
   }, []);
 
@@ -139,17 +149,27 @@ const Popup = () => {
       chrome.storage.onChanged.addListener(function (changes, namespace) {
         for (let key in changes) {
           if (key == 'coinList-detail') {
-            console.log(changes, 'changes local');
+            console.log(changes, `changes local 更新时间${getNowTime()}`);
+            setCoinContent(changes['coinList-detail'].newValue);
           }
         }
       });
     }
-
     return () => {
       //页面退出停止监听列表
       chrome.runtime.sendMessage({ endfetchDataAndUpdate: true });
+      //页面退出清除定时器
+      clearTimeoutList(timesListRef.current);
     };
   }, []);
+
+  //打开popup页面执行的函数
+  const openPopupFun = async () => {
+    const updateBtn = await sessionT.get('updateBtn');
+    SetssgxType(updateBtn || false);
+    SendupdateBtnFun(updateBtn);
+    !updateBtn && coinListreq();
+  };
 
   //弹出验证码
   const ejectModal = async () => {
@@ -167,8 +187,8 @@ const Popup = () => {
       messageApi.open({
         key,
         type: 'error',
-        content: '请联系管理员!',
-        duration: 5,
+        content: '当前ip可能被暂时风控，请尝试切换你的VPN节点',
+        duration: 10,
       });
     }
   };
@@ -202,7 +222,7 @@ const Popup = () => {
           messageApi.open({
             key,
             type: 'error',
-            content: '请联系管理员!',
+            content: '请点击图片重新验证！',
             duration: 5,
           });
           setTokendanger(true);
@@ -228,18 +248,53 @@ const Popup = () => {
   };
 
   const SendupdateBtnFun = (updateBtn: any) => {
-    // 默认true为暂停
+    // true为发送开始 false发送暂停
     updateBtn
       ? chrome.runtime.sendMessage({ startfetchDataAndUpdate: true })
       : chrome.runtime.sendMessage({ endfetchDataAndUpdate: true });
+  };
+
+  //默认请求的coinList列表
+  const coinListreq = async (index = 0) => {
+    try {
+      let apilist: Array<any> = (await sessionT.get('coinList')) || [];
+      if (index >= apilist.length) {
+        //清除定时器
+        clearTimeoutList(timesListRef.current);
+        return;
+      }
+      let coinListDetail = (await sessionT.get('coinList-detail')) || [];
+      // 发起接口请求
+      const result = await getToken(
+        apilist[index].contract,
+        apilist[index].chain,
+      );
+      coinListDetail[index] = result?.data?.token || {};
+      coinListDetail[index].time = getNowTime();
+      await sessionT.set('coinList-detail', coinListDetail);
+      console.log(getNowTime(), '默认请求');
+      // 等待一段时间后再次调用该函数（不定时）
+      const randomDelay = Math.floor(Math.random() * 100) + 500; // 5毫秒到6毫秒之间的随机延迟
+      let times = setTimeout(() => {
+        coinListreq((index || 0) + 1);
+        clearTimeout(times);
+      }, randomDelay);
+      timesListRef.current.push(times);
+    } catch (error) {
+      //清除定时器
+      clearTimeoutList(timesListRef.current);
+      //请求出现错误中断 弹出验证码
+      console.log(error);
+      ejectModal();
+    }
   };
 
   return (
     <div className={styles.app}>
       {contextHolder}
       <div className={styles.top}>
-        {new Array(4).fill(0).map((item, index) => {
-          return <Card {...modeData} key={index} />;
+        {coinContent.slice(0, 3).map((item, index) => {
+          return <Card data={item} key={index} />;
         })}
       </div>
 
@@ -339,22 +394,19 @@ const Popup = () => {
 
 export default Popup;
 
-interface carprops {
-  name: string;
-  price: number;
-  wave: number;
-  wavep: number;
-}
-
-const Card = (data: carprops) => {
+const Card = (datarposp: any) => {
+  let data = datarposp.data;
   return (
     <div
       className={styles.cardx}
-      style={{ color: ispositiveAndNegativereturnColor(data.wavep) }}
+      style={{
+        color: ispositiveAndNegativereturnColor(data?.current_price_usd),
+      }}
+      title={`${data?.symbol} 价格更新时间：${data?.time}`}
     >
-      <div className={styles.title}>{data.name}</div>
-      <div className={styles.price}>${data.price}</div>
-      <div className={styles.footer}>{data.wavep + '%'}</div>
+      <div className={styles.title}>{data?.symbol}</div>
+      <div className={styles.price}>${data?.current_price_usd}</div>
+      <div className={styles.footer}>{data?.current_price_usd + '%'}</div>
     </div>
   );
 };
