@@ -58,3 +58,32 @@ export const getNowTime = () => {
 export const delay = (ms: number) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
+
+//价格转换器
+export const priceConverter = (price: number, decimal: number) => {
+  try {
+    if (price < 0) {
+      let spare = price.toFixed(decimal || 18);
+      //获取点后面的0有多少位（截取到数字之前）
+      let match = spare.match(/\.0+/);
+      const zeroDigits = match ? match[0].length - 1 : 0;
+      //除0外的第一个出现的数字
+      const matchNumbr = spare.match(/[^0.]/) || [''];
+      let matchNumbrIndex = spare?.indexOf(matchNumbr[0]);
+      let substringPrice = spare?.substring(
+        matchNumbrIndex,
+        matchNumbrIndex + 3,
+      );
+      if (zeroDigits >= 3) {
+        return `0.0${zeroDigits - 1}${substringPrice}`;
+      } else {
+        return price.toFixed(4);
+      }
+    } else {
+      return price.toFixed(2);
+    }
+  } catch (error) {
+    console.log(error);
+    return '市场无价格';
+  }
+};

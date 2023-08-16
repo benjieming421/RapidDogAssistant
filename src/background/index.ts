@@ -71,6 +71,7 @@ async function fetchDataAndUpdate(apilist = [], index = 0) {
     //这段换成储存数据在local
     coinListDetail[lastIndex] = result?.data?.token || {};
     coinListDetail[lastIndex].time = getNowTime();
+    coinListDetail[index].timespare = new Date().getTime();
     await sessionT.set('coinList-detail', coinListDetail);
     console.log(coinListDetail, `后台的 changes local 更新时间${getNowTime()}`);
 

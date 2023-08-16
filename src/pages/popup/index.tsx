@@ -4,6 +4,7 @@ import {
   getCaptcha,
   getNowTime,
   ispositiveAndNegativereturnColor,
+  priceConverter,
   verifyCaptcha,
 } from '@/utils';
 import sessionT from '@/utils/session';
@@ -271,6 +272,7 @@ const Popup = () => {
       );
       coinListDetail[index] = result?.data?.token || {};
       coinListDetail[index].time = getNowTime();
+      coinListDetail[index].timespare = new Date().getTime();
       await sessionT.set('coinList-detail', coinListDetail);
       console.log(getNowTime(), '默认请求');
       // 等待一段时间后再次调用该函数（不定时）
@@ -400,13 +402,15 @@ const Card = (datarposp: any) => {
     <div
       className={styles.cardx}
       style={{
-        color: ispositiveAndNegativereturnColor(data?.current_price_usd),
+        color: ispositiveAndNegativereturnColor(data?.price_change),
       }}
-      title={`${data?.symbol} 价格更新时间：${data?.time}`}
+      title={`${data?.symbol} 价格更新时间：${data?.time} \n 精准价格：${data?.current_price_usd}`}
     >
       <div className={styles.title}>{data?.symbol}</div>
-      <div className={styles.price}>${data?.current_price_usd}</div>
-      <div className={styles.footer}>{data?.current_price_usd + '%'}</div>
+      <div className={styles.price}>
+        ${priceConverter(data?.current_price_usd, data?.decimal)}
+      </div>
+      <div className={styles.footer}>{data?.price_change + '%'}</div>
     </div>
   );
 };
