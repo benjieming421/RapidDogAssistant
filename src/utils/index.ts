@@ -62,8 +62,8 @@ export const delay = (ms: number) => {
 //价格转换器
 export const priceConverter = (price: number, decimal: number) => {
   try {
-    if (price < 0) {
-      let spare = price.toFixed(decimal || 18);
+    let spare = price?.toFixed(decimal || 18);
+    if (Number(spare.split('.')[0]) <= 0) {
       //获取点后面的0有多少位（截取到数字之前）
       let match = spare.match(/\.0+/);
       const zeroDigits = match ? match[0].length - 1 : 0;
@@ -75,7 +75,7 @@ export const priceConverter = (price: number, decimal: number) => {
         matchNumbrIndex + 3,
       );
       if (zeroDigits >= 3) {
-        return `0.0${zeroDigits - 1}${substringPrice}`;
+        return `0.0{${zeroDigits - 1}}${substringPrice}`;
       } else {
         return price.toFixed(4);
       }

@@ -47,6 +47,7 @@ export default {
   get: async function (url: string, params?: any, headers?: any) {
     let token = await tokenReturn();
     let headersT = { ...headers, 'X-Auth': token };
+    url == '/v1/captcha/getCaptcha' && delete headersT['X-Auth'];
     return apiAxios('GET', url, params, headersT);
   },
   post: async function (url: string, params?: any, headers?: any) {

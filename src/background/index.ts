@@ -20,8 +20,8 @@ const coinList = [
     chain: 'bsc',
   },
   {
-    symbol: 'BNB',
-    contract: '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c',
+    symbol: 'CAT',
+    contract: '0x0173295183685f27c84db046b5f0bea3e683c24b',
     chain: 'bsc',
   },
   {
@@ -71,7 +71,7 @@ async function fetchDataAndUpdate(apilist = [], index = 0) {
     //这段换成储存数据在local
     coinListDetail[lastIndex] = result?.data?.token || {};
     coinListDetail[lastIndex].time = getNowTime();
-    coinListDetail[index].timespare = new Date().getTime();
+    coinListDetail[lastIndex].timespare = new Date().getTime();
     await sessionT.set('coinList-detail', coinListDetail);
     console.log(coinListDetail, `后台的 changes local 更新时间${getNowTime()}`);
 

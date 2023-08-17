@@ -8,14 +8,13 @@ import {
   verifyCaptcha,
 } from '@/utils';
 import sessionT from '@/utils/session';
-import { PoweroffOutlined } from '@ant-design/icons';
+import { PoweroffOutlined, SyncOutlined } from '@ant-design/icons';
 import { Button, Image, Input, message, Modal, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useRef, useState } from 'react';
 import styles from './style.less';
 
 interface DataType {
-  key: React.Key;
   symbol: string;
   current_price_usd: number;
   price_change: number;
@@ -37,7 +36,7 @@ const columns: ColumnsType<DataType> = [
     align: 'center',
     render: (price) => (
       <div style={{ color: ispositiveAndNegativereturnColor(price) }}>
-        {price + '%'}
+        {price < 0 ? `${price}%` : `+${price}` + '%'}
       </div>
     ),
   },
@@ -49,50 +48,22 @@ const columns: ColumnsType<DataType> = [
   },
 ];
 
-const data: DataType[] = [
-  {
-    key: '1',
-    symbol: 'BTC',
-    current_price_usd: 32231,
-    price_change: -1.67,
-    time: '14:59',
-  },
-  {
-    key: '2',
-    symbol: 'ETH',
-    current_price_usd: 2800,
-    price_change: -1.67,
-    time: '14:59',
-  },
-  {
-    key: '3',
-    symbol: 'DOGE',
-    current_price_usd: 0.0232,
-    price_change: 1.67,
-    time: '14:59',
-  },
-  {
-    key: '4',
-    symbol: 'LUNA',
-    current_price_usd: 32231,
-    price_change: -1.67,
-    time: '14:59',
-  },
-  {
-    key: '5',
-    symbol: 'ATC',
-    current_price_usd: 2800,
-    price_change: -1.67,
-    time: '14:59',
-  },
-  {
-    key: '6',
-    symbol: 'X',
-    current_price_usd: 0.0232,
-    price_change: 1.67,
-    time: '14:59',
-  },
-];
+// const data: DataType[] = [
+//   {
+//     key: '1',
+//     symbol: 'BTC',
+//     current_price_usd: 32231,
+//     price_change: -1.67,
+//     time: '14:59',
+//   },
+//   {
+//     key: '2',
+//     symbol: 'ETH',
+//     current_price_usd: 2800,
+//     price_change: -1.67,
+//     time: '14:59',
+//   }
+// ];
 
 const Popup = () => {
   //验证码弹出框状态
@@ -124,6 +95,9 @@ const Popup = () => {
   //首页coin列表信息
   const [coinContent, setCoinContent] = useState([]);
 
+  //刷新按钮状态
+  const [syncOutlinedType, setSyncOutlinedType] = useState(false);
+
   useEffect(() => {
     (async () => {
       try {
@@ -135,6 +109,8 @@ const Popup = () => {
           console.log('popup has been open', getNowTime());
           //打开popup页面默认执行的函数
           openPopupFun();
+          //默认读取的coinList列表
+          updateCoinList();
         } else {
           ejectModal();
         }
@@ -151,7 +127,7 @@ const Popup = () => {
         for (let key in changes) {
           if (key == 'coinList-detail') {
             console.log(changes, `changes local 更新时间${getNowTime()}`);
-            setCoinContent(changes['coinList-detail'].newValue);
+            updateCoinList();
           }
         }
       });
@@ -164,12 +140,18 @@ const Popup = () => {
     };
   }, []);
 
+  //更新页面显示的coinList列表
+  const updateCoinList = async () => {
+    const coinListDetail = await sessionT.get('coinList-detail');
+    setCoinContent(coinListDetail || []);
+  };
+
   //打开popup页面执行的函数
   const openPopupFun = async () => {
     const updateBtn = await sessionT.get('updateBtn');
     SetssgxType(updateBtn || false);
     SendupdateBtnFun(updateBtn);
-    !updateBtn && coinListreq();
+    coinListreq();
   };
 
   //弹出验证码
@@ -213,6 +195,7 @@ const Popup = () => {
         if (verifyData?.status == 1) {
           setIsModalOpen(false);
           setTokendanger(false);
+          coinListreq();
           messageApi.open({
             key,
             type: 'success',
@@ -255,6 +238,15 @@ const Popup = () => {
       : chrome.runtime.sendMessage({ endfetchDataAndUpdate: true });
   };
 
+  //刷新按钮状态改变
+  const syncOutlinedFun = () => {
+    setSyncOutlinedType(true);
+    let items = setTimeout(() => {
+      setSyncOutlinedType(false);
+      clearTimeout(items);
+    }, 1000);
+  };
+
   //默认请求的coinList列表
   const coinListreq = async (index = 0) => {
     try {
@@ -291,6 +283,22 @@ const Popup = () => {
     }
   };
 
+  const tableDataSourceHandle = (data: any) => {
+    let dataSource = data.map((item: any) => {
+      return {
+        key: item?.token,
+        symbol: item?.symbol || '未知币种',
+        current_price_usd: priceConverter(
+          item?.current_price_usd,
+          item?.decimal,
+        ),
+        price_change: item?.price_change || 0,
+        time: item?.time,
+      };
+    });
+    return dataSource;
+  };
+
   return (
     <div className={styles.app}>
       {contextHolder}
@@ -303,7 +311,7 @@ const Popup = () => {
       <div className={styles.tablex}>
         <Table
           columns={columns}
-          dataSource={data}
+          dataSource={tableDataSourceHandle(coinContent.slice(3))}
           size="small"
           pagination={false}
           bordered={false}
@@ -319,7 +327,7 @@ const Popup = () => {
           icon={<PoweroffOutlined />}
           size={'small'}
           onClick={() => ejectModal()}
-          style={{ width: '5.3vw', height: '8.3vh', marginLeft: '8px' }}
+          style={{ width: '5.3vw', height: '9vh', marginLeft: '8px' }}
           type="primary"
         />
 
@@ -337,16 +345,22 @@ const Popup = () => {
               return !item;
             });
           }}
-          style={{ height: '8.3vh', marginLeft: '8px' }}
+          style={{ height: '9vh', marginLeft: '8px' }}
           type="primary"
         >
           {!ssgxType ? '实时更新' : '暂停更新'}
         </Button>
 
-        {/* 
         <div className={styles.shuaxinbox} title="手动刷新数据">
-          <SyncOutlined spin={false} style={{ fontSize: 20 }} />
-        </div> */}
+          <SyncOutlined
+            spin={syncOutlinedType}
+            style={{ fontSize: 20 }}
+            onClick={() => {
+              coinListreq();
+              syncOutlinedFun();
+            }}
+          />
+        </div>
       </div>
 
       <Modal
@@ -404,13 +418,17 @@ const Card = (datarposp: any) => {
       style={{
         color: ispositiveAndNegativereturnColor(data?.price_change),
       }}
-      title={`${data?.symbol} 价格更新时间：${data?.time} \n 精准价格：${data?.current_price_usd}`}
+      title={`${data?.symbol} 价格更新时间：${data?.time}`}
     >
-      <div className={styles.title}>{data?.symbol}</div>
+      <div className={styles.title}>{data?.symbol || '未知币种'}</div>
       <div className={styles.price}>
         ${priceConverter(data?.current_price_usd, data?.decimal)}
       </div>
-      <div className={styles.footer}>{data?.price_change + '%'}</div>
+      <div className={styles.footer}>
+        {data?.price_change < 0
+          ? `${data?.price_change || 0}%`
+          : `+${data?.price_change || 0}` + '%'}
+      </div>
     </div>
   );
 };
