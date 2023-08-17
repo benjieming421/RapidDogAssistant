@@ -1,6 +1,6 @@
 # 土狗捕捉器
 
-基于 多链浏览器开发 的 Chrome 插件土狗行情插件 实现币圈一插件完成所有操作，不再烦恼打开多个网站进行多种数据查询
+#### 基于 多链浏览器开发 的 Chrome 插件土狗行情插件 实现币圈一插件完成所有操作，不再烦恼打开多个网站进行多种数据查询
 
 ## 🤝 支持的钱包：
 **BSC链、Ethereum链、Base链、Arbitrum链、opbnb链、CORE链、PulseChain链、Optimism链、Sui链、zkSync Era链、CVN链、OMP链、FSC链、Telegramx链、Polygon链、Heco链、OKC链、Tron链、EthereumPoW链、Conflux链、  
