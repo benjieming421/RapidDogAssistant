@@ -20,7 +20,8 @@ FAB链、Grove链、EOS链、kava链、MAPO链、BRC20链、Pego链、SV链、Mi
 
 ## 📦 使用
 
-谷歌商店上线中···
+谷歌商店上线中··· 
+
 edge微软商城上线中···
 
 [MIT](./LICENSE) ® Arvin Xu
