@@ -1,60 +1,26 @@
-# Umi Chrome Extensions Template
+# 土狗捕捉器
 
-![][version-url] [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release) ![][license-url]
+基于 多链浏览器开发 的 Chrome 插件土狗行情插件 实现一插件完成所有操作，不再烦恼打开多个网站进行多种数据查询。
 
-[version-url]: https://img.shields.io/github/v/release/arvinxx/umi-chrome-extensions-template
-[license-url]: https://img.shields.io/github/license/arvinxx/umi-chrome-extensions-template
-
-基于 Umi 的 Chrome 插件开发脚手架。
+## 🤝 支持的钱包：
+**BSC链、Ethereum链、Base链、Arbitrum链、opbnb链、CORE链、PulseChain链、Optimism链、Sui链、zkSync Era链、CVN链、OMP链、FSC链、Telegramx链、Polygon链、Heco链、OKC链、Tron链、EthereumPoW链、Conflux链、  
+Fantom链、EthereumFair链、Avalanche链、Moonbeam链、Osmosis链、Harmony链、SHJ链、KCC链、Godwoken链、Vision链、UBC链、Kortho链、Halo链、MSC链、CUBE链、Dogechain链、ETC链、ETND链、GGA链、MBK链、REI链、 
+Shib链、KNK链、Qitmeer链、bitgert链、tc链、dojo链、pgchain链、hashbit链、platon链、alveychain链、Aptos链、luckychain链、Drac链、mbechain链、olinkchain链、fibochain链、Filecoin链、APchain链、Solana链、 
+FAB链、Grove链、EOS链、kava链、MAPO链、BRC20链、Pego链、SV链、MixMax链、polygonzkevm链、opbnbtestnet链、PepeChain链、Linea链、Mantle链；**
 
 ## ✨ 特性
 
-- 🌋 **企业级框架**：基于 umi 和 umi 插件 [umi-plugin-extension](https://github.com/arvinxx/umi-plugin-extensions) 构建，享受 umi 生态的全部技术能力；
-- 📦 **开箱即用**：脚手架中已经配置 Chrome 插件开发常用的设置项；
-- 🔥 **热更新**： 开发时 `options` 和 `popup` 页面支持 `react hot reload` 和 `react devtools`；
-- ♻️ **自动重载**： 开发时 `contentScipts` 和 `background` 支持自动刷新;
-- 🔧 **配置收敛**：直接在 `.umi.ts` 或 `config.ts` 设置插件配置；
-- ⛑ **类型安全**： 脚手架由 Typescript 编写，已集成 Chrome 插件的类型定义文件。
-- 🚀 **版本发布**： 使用 `semantic release` 实现语义化版本管理与自动发布流
+- 🌋 **获取实时的最新数据**
+- 📦 **支持导入钱包代币看价格**
+- ⛑ **支持上班模式、不被领导同事发现在看盘！！！**
+- 🔥 **支持多链钱包查看**
+- ♻️ **代币风险评估**
+- 🔧 **代币价格走势**
+- 🚀 **每日收益提醒--开发中**
 
 ## 📦 使用
 
-克隆模板
-
-```
-git clone https://github.com/arvinxx/umi-chrome-extension-template.git
-```
-
-安装依赖，推荐使用 pnpm
-
-```
-pnpm i
-```
-
-## 🛠️ 开发
-
-🔔 请确保你对 Chrome 插件开发已经有基本的了解，入门推荐：[Chrome 插件(扩展)开发全攻略](https://umi-plugin-extensions.vercel.app/tutorial)。
-
-如果你对项目的配置有疑问，请查阅 umi-plugin-extension 配置项文档。 ➡️ [传送门](https://arvinxx.github.io/umi-plugin-extensions/#/api)
-
-### 启动
-
-```
-pnpm start
-```
-
-## 👷 打包
-
-构建生产产物直接运行：
-
-```
-pnpm run build
-```
-
-## 🤝 贡献 [![PRs Welcome](https://camo.githubusercontent.com/0ff11ed110cfa69f703ef0dcca3cee6141c0a8ef465e8237221ae245de3deb3d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e7376673f7374796c653d666c61742d737175617265)](http://makeapullrequest.com/)
-
-欢迎提交 PRs 和 issues。
-
-## License
+谷歌商店上线中···
+edge微软商城上线中···
 
 [MIT](./LICENSE) ® Arvin Xu
