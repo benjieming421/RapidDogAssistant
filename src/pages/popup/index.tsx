@@ -9,9 +9,11 @@ import {
 } from '@/utils';
 import sessionT from '@/utils/session';
 import { PoweroffOutlined, SyncOutlined } from '@ant-design/icons';
-import { Button, Image, Input, message, Modal, Table } from 'antd';
+import { Alert, Button, Image, Input, message, Modal, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
+import Marquee from 'react-fast-marquee';
 import styles from './style.less';
 
 interface DataType {
@@ -98,6 +100,9 @@ const Popup = () => {
   //刷新按钮状态
   const [syncOutlinedType, setSyncOutlinedType] = useState(false);
 
+  //alert公告框状态
+  const [alertType, setAlertType] = useState(false);
+
   useEffect(() => {
     (async () => {
       try {
@@ -111,6 +116,8 @@ const Popup = () => {
           openPopupFun();
           //默认读取的coinList列表
           updateCoinList();
+          //alert公告框弹出判断
+          alterModalshowFun();
         } else {
           ejectModal();
         }
@@ -155,7 +162,7 @@ const Popup = () => {
   };
 
   //弹出验证码
-  const ejectModal = async () => {
+  const ejectModal = async (num = 0) => {
     try {
       const capcha = await getCaptcha();
       console.log(capcha, 'capcha');
@@ -166,13 +173,20 @@ const Popup = () => {
       });
       setIsModalOpen(true);
     } catch (error) {
-      console.log(error);
-      messageApi.open({
-        key,
-        type: 'error',
-        content: '当前ip可能被暂时风控，请尝试切换你的VPN节点',
-        duration: 10,
-      });
+      if (num == 0) {
+        //第一次请求失败 重新请求
+        ejectModal(1);
+        return;
+      } else {
+        console.log(error);
+        messageApi.open({
+          key,
+          type: 'error',
+          content: '当前ip可能被暂时风控，请尝试切换你的VPN节点',
+          duration: 10,
+        });
+        setTokendanger(false);
+      }
     }
   };
 
@@ -287,7 +301,7 @@ const Popup = () => {
     let dataSource = data.map((item: any) => {
       return {
         key: item?.token,
-        symbol: item?.symbol || '未知币种',
+        symbol: item?.symbol || '请重新刷新',
         current_price_usd: priceConverter(
           item?.current_price_usd,
           item?.decimal,
@@ -297,6 +311,16 @@ const Popup = () => {
       };
     });
     return dataSource;
+  };
+
+  const alterModalshowFun = async () => {
+    let days7agoTimestamp = (await sessionT.get('alertShowTime')) ?? 0;
+    const newTimestamp = dayjs().valueOf();
+    if (newTimestamp >= days7agoTimestamp) {
+      return setAlertType(true);
+    } else {
+      return setAlertType(false);
+    }
   };
 
   return (
@@ -318,6 +342,13 @@ const Popup = () => {
           className={styles.column}
           rowClassName={styles.row}
           scroll={{ y: '46vh' }}
+          onRow={(record) => {
+            return {
+              onClick: (event) => {
+                console.log(record);
+              }, // 点击行
+            };
+          }}
         />
       </div>
 
@@ -358,9 +389,33 @@ const Popup = () => {
             onClick={() => {
               coinListreq();
               syncOutlinedFun();
+              sessionT.remove('alertShowTime');
             }}
           />
         </div>
+      </div>
+
+      <div className={styles.alertdiv}>
+        {alertType && (
+          <Alert
+            className={styles.alertchild}
+            onClick={() => {
+              // 获取未来第7天的时间戳
+              const futureDate = dayjs().add(7, 'day');
+              const futureTimestamp = futureDate.valueOf();
+              sessionT.set('alertShowTime', futureTimestamp);
+            }}
+            message={
+              <Marquee pauseOnHover gradient={false}>
+                <span style={{ color: 'red' }}>
+                  注意！！！数据来源于链上各大平台如：uniswap、pancakeswap等，与币安、ok等各大交易所的代币价格有所波动&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                </span>
+              </Marquee>
+            }
+            type="success"
+            closable
+          />
+        )}
       </div>
 
       <Modal
@@ -418,9 +473,9 @@ const Card = (datarposp: any) => {
       style={{
         color: ispositiveAndNegativereturnColor(data?.price_change),
       }}
-      title={`${data?.symbol} 价格更新时间：${data?.time}`}
+      title={`${data?.symbol} 价格更新时间：${data?.time}\n价格来源：${data?.dexname}`}
     >
-      <div className={styles.title}>{data?.symbol || '未知币种'}</div>
+      <div className={styles.title}>{data?.symbol || '请重新刷新'}</div>
       <div className={styles.price}>
         ${priceConverter(data?.current_price_usd, data?.decimal)}
       </div>
