@@ -4,24 +4,19 @@ export default defineConfig({
   plugins: [require.resolve('umi-plugin-extensions')],
   extensions: {
     name: '土狗捕捉器',
-    description: '基于 多链浏览器开发 的 Chrome 插件土狗行情插件',
+    description:
+      '基于 多链数据开发 的 Chrome 插件土狗行情插件 实现一插件完成所有操作，不再烦恼打开多个网站进行多种数据查询',
     optionsUI: {
       page: '@/pages/options',
       openInTab: true,
     },
     background: { service_worker: '@/background/index' },
     popupUI: '@/pages/popup',
-    contentScripts: [
-      { matches: ['https://github.com/*'], entries: ['@/contentScripts/all'] },
-    ],
     icons: {
-      16: 'logo/logo@16.png',
-      32: 'logo/logo@32.png',
-      48: 'logo/logo@48.png',
       128: 'logo/logo@128.png',
     },
     host_permissions: ['https://api.vbdg.xyz/v1api/*'],
-    permissions: ['storage', 'contextMenus', 'notifications'],
+    permissions: ['storage', 'contextMenus'],
   },
   mpa: {
     template: './public/template/index.html',
