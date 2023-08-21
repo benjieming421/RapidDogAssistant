@@ -21,6 +21,7 @@ interface DataType {
   current_price_usd: number;
   price_change: number;
   time: string;
+  dexname: string;
 }
 
 const columns: ColumnsType<DataType> = [
@@ -49,23 +50,6 @@ const columns: ColumnsType<DataType> = [
     width: 80,
   },
 ];
-
-// const data: DataType[] = [
-//   {
-//     key: '1',
-//     symbol: 'BTC',
-//     current_price_usd: 32231,
-//     price_change: -1.67,
-//     time: '14:59',
-//   },
-//   {
-//     key: '2',
-//     symbol: 'ETH',
-//     current_price_usd: 2800,
-//     price_change: -1.67,
-//     time: '14:59',
-//   }
-// ];
 
 const Popup = () => {
   //验证码弹出框状态
@@ -114,10 +98,10 @@ const Popup = () => {
           console.log('popup has been open', getNowTime());
           //打开popup页面默认执行的函数
           openPopupFun();
-          //默认读取的coinList列表
-          updateCoinList();
           //alert公告框弹出判断
           alterModalshowFun();
+          //默认读取的coinList列表
+          updateCoinList();
         } else {
           ejectModal();
         }
@@ -279,6 +263,8 @@ const Popup = () => {
       coinListDetail[index] = result?.data?.token || {};
       coinListDetail[index].time = getNowTime();
       coinListDetail[index].timespare = new Date().getTime();
+      coinListDetail[index].dexname =
+        result?.data?.pairs?.[0]?.show_name || '-';
       await sessionT.set('coinList-detail', coinListDetail);
       console.log(getNowTime(), '默认请求');
       // 等待一段时间后再次调用该函数（不定时）
@@ -300,14 +286,15 @@ const Popup = () => {
   const tableDataSourceHandle = (data: any) => {
     let dataSource = data.map((item: any) => {
       return {
-        key: item?.token,
+        key: item?.token || '-',
         symbol: item?.symbol || '请重新刷新',
         current_price_usd: priceConverter(
           item?.current_price_usd,
           item?.decimal,
         ),
         price_change: item?.price_change || 0,
-        time: item?.time,
+        time: item?.time || '-',
+        dexname: item?.dexname || '-',
       };
     });
     return dataSource;
@@ -341,12 +328,13 @@ const Popup = () => {
           bordered={false}
           className={styles.column}
           rowClassName={styles.row}
-          scroll={{ y: '46vh' }}
+          scroll={{ y: '40vh' }}
           onRow={(record) => {
             return {
               onClick: (event) => {
                 console.log(record);
               }, // 点击行
+              title: `价格来源：${record?.dexname || '-'}`,
             };
           }}
         />
@@ -395,8 +383,8 @@ const Popup = () => {
         </div>
       </div>
 
-      <div className={styles.alertdiv}>
-        {alertType && (
+      {alertType && (
+        <div className={styles.alertdiv}>
           <Alert
             className={styles.alertchild}
             onClick={() => {
@@ -415,8 +403,8 @@ const Popup = () => {
             type="success"
             closable
           />
-        )}
-      </div>
+        </div>
+      )}
 
       <Modal
         title="验证"

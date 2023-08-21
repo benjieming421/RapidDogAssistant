@@ -63,6 +63,7 @@ export const delay = (ms: number) => {
 export const priceConverter = (price: number, decimal: number) => {
   try {
     let spare = price?.toFixed(decimal || 18);
+    if (!spare) return;
     if (Number(spare.split('.')[0]) <= 0) {
       //获取点后面的0有多少位（截取到数字之前）
       let match = spare.match(/\.0+/);
@@ -84,6 +85,6 @@ export const priceConverter = (price: number, decimal: number) => {
     }
   } catch (error) {
     console.log(error);
-    return '市场无价格';
+    return '请重新刷新';
   }
 };
