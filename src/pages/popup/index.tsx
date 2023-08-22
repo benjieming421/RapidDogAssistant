@@ -9,7 +9,16 @@ import {
 } from '@/utils';
 import sessionT from '@/utils/session';
 import { PoweroffOutlined, SyncOutlined } from '@ant-design/icons';
-import { Alert, Button, Image, Input, message, Modal, Table } from 'antd';
+import {
+  Alert,
+  Button,
+  Image,
+  Input,
+  message,
+  Modal,
+  Skeleton,
+  Table,
+} from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
@@ -87,6 +96,9 @@ const Popup = () => {
   //alert公告框状态
   const [alertType, setAlertType] = useState(false);
 
+  //骨架屏状态
+  const [skeletonType, setSkeletonType] = useState<number>(0);
+
   useEffect(() => {
     (async () => {
       try {
@@ -128,6 +140,8 @@ const Popup = () => {
       chrome.runtime.sendMessage({ endfetchDataAndUpdate: true });
       //页面退出清除定时器
       clearTimeoutList(timesListRef.current);
+      //重置骨架屏设置
+      setSkeletonType(0);
     };
   }, []);
 
@@ -241,6 +255,10 @@ const Popup = () => {
     setSyncOutlinedType(true);
     let items = setTimeout(() => {
       setSyncOutlinedType(false);
+      messageApi.success({
+        content: '刷新成功',
+        duration: 1,
+      });
       clearTimeout(items);
     }, 1000);
   };
@@ -267,6 +285,8 @@ const Popup = () => {
         result?.data?.pairs?.[0]?.show_name || '-';
       await sessionT.set('coinList-detail', coinListDetail);
       console.log(getNowTime(), '默认请求');
+      //骨架屏设置
+      setSkeletonType((item: number) => item + 1);
       // 等待一段时间后再次调用该函数（不定时）
       const randomDelay = Math.floor(Math.random() * 100) + 500; // 5毫秒到6毫秒之间的随机延迟
       let times = setTimeout(() => {
@@ -315,29 +335,45 @@ const Popup = () => {
       {contextHolder}
       <div className={styles.top}>
         {coinContent.slice(0, 3).map((item, index) => {
-          return <Card data={item} key={index} />;
+          return (
+            <Card
+              data={item}
+              key={index}
+              skeletonType={skeletonType}
+              index={index + 1}
+            />
+          );
         })}
       </div>
 
-      <div className={styles.tablex}>
-        <Table
-          columns={columns}
-          dataSource={tableDataSourceHandle(coinContent.slice(3))}
-          size="small"
-          pagination={false}
-          bordered={false}
-          className={styles.column}
-          rowClassName={styles.row}
-          scroll={{ y: '40vh' }}
-          onRow={(record) => {
-            return {
-              onClick: (event) => {
-                console.log(record);
-              }, // 点击行
-              title: `价格来源：${record?.dexname || '-'}`,
-            };
-          }}
-        />
+      <div
+        className={styles.tablex}
+        style={{
+          paddingTop: skeletonType < 4 ? '23px' : '0px',
+        }}
+      >
+        {skeletonType >= 4 ? (
+          <Table
+            columns={columns}
+            dataSource={tableDataSourceHandle(coinContent.slice(3))}
+            size="small"
+            pagination={false}
+            bordered={false}
+            className={styles.column}
+            rowClassName={styles.row}
+            scroll={{ y: '40vh' }}
+            onRow={(record) => {
+              return {
+                onClick: (event) => {
+                  console.log(record);
+                }, // 点击行
+                title: `价格来源：${record?.dexname || '-'}`,
+              };
+            }}
+          />
+        ) : (
+          <Skeleton active title={false} paragraph={{ rows: 4 }} />
+        )}
       </div>
 
       <div className={styles.btnarray}>
@@ -346,7 +382,7 @@ const Popup = () => {
           icon={<PoweroffOutlined />}
           size={'small'}
           onClick={() => ejectModal()}
-          style={{ width: '5.3vw', height: '9vh', marginLeft: '8px' }}
+          style={{ width: '22px', height: '22px', marginLeft: '8px' }}
           type="primary"
         />
 
@@ -364,7 +400,7 @@ const Popup = () => {
               return !item;
             });
           }}
-          style={{ height: '9vh', marginLeft: '8px' }}
+          style={{ height: '22px', marginLeft: '8px' }}
           type="primary"
         >
           {!ssgxType ? '实时更新' : '暂停更新'}
@@ -402,6 +438,9 @@ const Popup = () => {
             }
             type="success"
             closable
+            onClose={() => {
+              setAlertType(false);
+            }}
           />
         </div>
       )}
@@ -455,7 +494,7 @@ export default Popup;
 
 const Card = (datarposp: any) => {
   let data = datarposp.data;
-  return (
+  return datarposp.skeletonType >= datarposp.index ? (
     <div
       className={styles.cardx}
       style={{
@@ -473,5 +512,12 @@ const Card = (datarposp: any) => {
           : `+${data?.price_change || 0}` + '%'}
       </div>
     </div>
+  ) : (
+    <Skeleton
+      active
+      title={{ width: '24vw' }}
+      paragraph={{ width: '24vw', rows: 1 }}
+      className={styles.skeletonx}
+    />
   );
 };
