@@ -226,3 +226,60 @@ body {
     text-align: center;
   }
 }
+
+.symbol_index {
+  display: flex;
+  align-items: center;
+  line-height: 1;
+  position: relative;
+
+  .symboltext {
+    position: absolute;
+    left: 41px;
+    width: 74px;
+    text-align: left;
+    display: flex;
+    word-break: break-all;
+
+    .transmit {
+      &:hover {
+        color: #1677ff;
+      }
+    }
+  }
+
+  .icon_aggregate {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 0;
+
+    :global {
+      .ant-image {
+        width: 20px !important;
+        height: 20px !important;
+        position: absolute;
+        left: 0;
+      }
+    }
+
+    .icon1 {
+      width: 20px;
+      height: 20px;
+      position: absolute;
+      left: 0;
+    }
+
+    .icon2 {
+      position: absolute;
+      right: -3px;
+      bottom: 0px;
+      width: 13px;
+      height: 13px;
+    }
+  }
+}
+
+.symbolcolumns {
+  padding: 8px 0px !important;
+}
