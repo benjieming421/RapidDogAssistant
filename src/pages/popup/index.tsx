@@ -29,6 +29,8 @@ import { useEffect, useRef, useState } from 'react';
 import Marquee from 'react-fast-marquee';
 import styles from './style.less';
 
+import SetPage from './SetPage';
+
 interface DataType {
   symbol: string;
   current_price_usd: number;
@@ -151,6 +153,9 @@ const Popup = () => {
   //骨架屏状态
   const [skeletonType, setSkeletonType] = useState<number>(0);
 
+  //当前主页显示的组件名称
+  const [pagename, setPagename] = useState('SetPage');
+
   useEffect(() => {
     (async () => {
       try {
@@ -194,6 +199,8 @@ const Popup = () => {
       clearTimeoutList(timesListRef.current);
       //重置骨架屏设置
       setSkeletonType(0);
+      //重置主页名称
+      setPagename('');
     };
   }, []);
 
@@ -386,160 +393,165 @@ const Popup = () => {
   };
 
   return (
-    <div className={styles.app}>
-      {contextHolder}
-      <div className={styles.top}>
-        {coinContent.slice(0, 3).map((item, index) => {
-          return (
-            <Card
-              data={item}
-              key={index}
-              skeletonType={skeletonType}
-              index={index + 1}
+    <>
+      {pagename == 'SetPage' && <SetPage />}
+      {pagename == '' && (
+        <div className={styles.app}>
+          {contextHolder}
+          <div className={styles.top}>
+            {coinContent.slice(0, 3).map((item, index) => {
+              return (
+                <Card
+                  data={item}
+                  key={index}
+                  skeletonType={skeletonType}
+                  index={index + 1}
+                />
+              );
+            })}
+          </div>
+
+          <div
+            className={styles.tablex}
+            style={{
+              paddingTop: skeletonType < 4 ? '23px' : '0px',
+            }}
+          >
+            {skeletonType >= 4 ? (
+              <Table
+                columns={columns}
+                dataSource={tableDataSourceHandle(coinContent.slice(3))}
+                size="small"
+                pagination={false}
+                bordered={false}
+                className={styles.column}
+                rowClassName={styles.row}
+                scroll={{ y: '40vh' }}
+                onRow={(record) => {
+                  return {
+                    onClick: (event) => {
+                      console.log(record);
+                    }, // 点击行
+                    title: `价格来源：${record?.dexname || '-'}`,
+                  };
+                }}
+              />
+            ) : (
+              <Skeleton active title={false} paragraph={{ rows: 4 }} />
+            )}
+          </div>
+
+          <div className={styles.btnarray}>
+            <Button
+              danger={tokendanger}
+              icon={<PoweroffOutlined />}
+              size={'small'}
+              onClick={() => ejectModal()}
+              style={{ width: '22px', height: '22px', marginLeft: '8px' }}
+              type="primary"
             />
-          );
-        })}
-      </div>
 
-      <div
-        className={styles.tablex}
-        style={{
-          paddingTop: skeletonType < 4 ? '23px' : '0px',
-        }}
-      >
-        {skeletonType >= 4 ? (
-          <Table
-            columns={columns}
-            dataSource={tableDataSourceHandle(coinContent.slice(3))}
-            size="small"
-            pagination={false}
-            bordered={false}
-            className={styles.column}
-            rowClassName={styles.row}
-            scroll={{ y: '40vh' }}
-            onRow={(record) => {
-              return {
-                onClick: (event) => {
-                  console.log(record);
-                }, // 点击行
-                title: `价格来源：${record?.dexname || '-'}`,
-              };
+            <Button
+              danger={!ssgxType}
+              size={'small'}
+              title={
+                !ssgxType
+                  ? '点击按钮，数据开始更新！'
+                  : '数据实时更新中···，点击按钮暂停'
+              }
+              onClick={() => {
+                SetssgxType((item: boolean) => {
+                  SendupdateBtnFun(!item);
+                  return !item;
+                });
+              }}
+              style={{ height: '22px', marginLeft: '8px' }}
+              type="primary"
+            >
+              {!ssgxType ? '实时更新' : '暂停更新'}
+            </Button>
+
+            <div className={styles.shuaxinbox} title="手动刷新数据">
+              <SyncOutlined
+                spin={syncOutlinedType}
+                style={{ fontSize: 20 }}
+                onClick={() => {
+                  coinListreq();
+                  syncOutlinedFun();
+                  sessionT.remove('alertShowTime');
+                }}
+              />
+            </div>
+          </div>
+
+          {alertType && (
+            <div className={styles.alertdiv}>
+              <Alert
+                className={styles.alertchild}
+                message={
+                  <Marquee pauseOnHover gradient={false}>
+                    <span style={{ color: 'red' }} title={alertTitle}>
+                      {alertTitle}
+                    </span>
+                  </Marquee>
+                }
+                type="success"
+                closable
+                onClose={() => {
+                  setAlertType(false);
+                  // 获取未来第7天的时间戳
+                  const futureDate = dayjs().add(7, 'day');
+                  const futureTimestamp = futureDate.valueOf();
+                  sessionT.set('alertShowTime', futureTimestamp);
+                }}
+              />
+            </div>
+          )}
+
+          <Modal
+            title="验证"
+            open={isModalOpen}
+            onOk={() => {
+              validate();
             }}
-          />
-        ) : (
-          <Skeleton active title={false} paragraph={{ rows: 4 }} />
-        )}
-      </div>
-
-      <div className={styles.btnarray}>
-        <Button
-          danger={tokendanger}
-          icon={<PoweroffOutlined />}
-          size={'small'}
-          onClick={() => ejectModal()}
-          style={{ width: '22px', height: '22px', marginLeft: '8px' }}
-          type="primary"
-        />
-
-        <Button
-          danger={!ssgxType}
-          size={'small'}
-          title={
-            !ssgxType
-              ? '点击按钮，数据开始更新！'
-              : '数据实时更新中···，点击按钮暂停'
-          }
-          onClick={() => {
-            SetssgxType((item: boolean) => {
-              SendupdateBtnFun(!item);
-              return !item;
-            });
-          }}
-          style={{ height: '22px', marginLeft: '8px' }}
-          type="primary"
-        >
-          {!ssgxType ? '实时更新' : '暂停更新'}
-        </Button>
-
-        <div className={styles.shuaxinbox} title="手动刷新数据">
-          <SyncOutlined
-            spin={syncOutlinedType}
-            style={{ fontSize: 20 }}
-            onClick={() => {
-              coinListreq();
-              syncOutlinedFun();
-              sessionT.remove('alertShowTime');
+            onCancel={() => {
+              setIsModalOpen(false);
             }}
-          />
-        </div>
-      </div>
-
-      {alertType && (
-        <div className={styles.alertdiv}>
-          <Alert
-            className={styles.alertchild}
-            message={
-              <Marquee pauseOnHover gradient={false}>
-                <span style={{ color: 'red' }} title={alertTitle}>
-                  {alertTitle}
-                </span>
-              </Marquee>
-            }
-            type="success"
-            closable
-            onClose={() => {
-              setAlertType(false);
-              // 获取未来第7天的时间戳
-              const futureDate = dayjs().add(7, 'day');
-              const futureTimestamp = futureDate.valueOf();
-              sessionT.set('alertShowTime', futureTimestamp);
-            }}
-          />
+            style={{ top: 20 }}
+            width={'60vw'}
+            okText={'validate'}
+            cancelButtonProps={{ style: { display: 'none' } }}
+            className={styles.validate_modal}
+          >
+            <div className={styles.validate_content}>
+              <Image
+                width={'100%'}
+                height={77}
+                preview={false}
+                title="点击刷新"
+                key={verificationImage.id}
+                src={verificationImage.image}
+                onClick={() => ejectModal()}
+                fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3PTWBSGcbGzM6GCKqlIBRV0dHRJFarQ0eUT8LH4BnRU0NHR0UEFVdIlFRV7TzRksomPY8uykTk/zewQfKw/9znv4yvJynLv4uLiV2dBoDiBf4qP3/ARuCRABEFAoBEgghggQAQZQKAnYEaQBAQaASKIAQJEkAEEegJmBElAoBEgghggQAQZQKAnYEaQBAQaASKIAQJEkAEEegJmBElAoBEgghggQAQZQKAnYEaQBAQaASKIAQJEkAEEegJmBElAoBEgghggQAQZQKAnYEaQBAQaASKIAQJEkAEEegJmBElAoBEgghggQAQZQKAnYEaQBAQaASKIAQJEkAEEegJmBElAoBEgghggQAQZQKAnYEaQBAQaASKIAQJEkAEEegJmBElAoBEgghggQAQZQKAnYEaQBAQaASKIAQJEkAEEegJmBElAoBEgghggQAQZQKAnYEaQBAQaASKIAQJEkAEEegJmBElAoBEgghggQAQZQKAnYEaQBAQaASKIAQJEkAEEegJmBElAoBEgghggQAQZQKAnYEaQBAQaASKIAQJEkAEEegJmBElAoBEgghggQAQZQKAnYEaQBAQaASKIAQJEkAEEegJmBElAoBEgghggQAQZQKAnYEaQBAQaASKIAQJEkAEEegJmBElAoBEgghgg0Aj8i0JO4OzsrPv69Wv+hi2qPHr0qNvf39+iI97soRIh4f3z58/u7du3SXX7Xt7Z2enevHmzfQe+oSN2apSAPj09TSrb+XKI/f379+08+A0cNRE2ANkupk+ACNPvkSPcAAEibACyXUyfABGm3yNHuAECRNgAZLuYPgEirKlHu7u7XdyytGwHAd8jjNyng4OD7vnz51dbPT8/7z58+NB9+/bt6jU/TI+AGWHEnrx48eJ/EsSmHzx40L18+fLyzxF3ZVMjEyDCiEDjMYZZS5wiPXnyZFbJaxMhQIQRGzHvWR7XCyOCXsOmiDAi1HmPMMQjDpbpEiDCiL358eNHurW/5SnWdIBbXiDCiA38/Pnzrce2YyZ4//59F3ePLNMl4PbpiL2J0L979+7yDtHDhw8vtzzvdGnEXdvUigSIsCLAWavHp/+qM0BcXMd/q25n1vF57TYBp0a3mUzilePj4+7k5KSLb6gt6ydAhPUzXnoPR0dHl79WGTNCfBnn1uvSCJdegQhLI1vvCk+fPu2ePXt2tZOYEV6/fn31dz+shwAR1sP1cqvLntbEN9MxA9xcYjsxS1jWR4AIa2Ibzx0tc44fYX/16lV6NDFLXH+YL32jwiACRBiEbf5KcXoTIsQSpzXx4N28Ja4BQoK7rgXiydbHjx/P25TaQAJEGAguWy0+2Q8PD6/Ki4R8EVl+bzBOnZY95fq9rj9zAkTI2SxdidBHqG9+skdw43borCXO/ZcJdraPWdv22uIEiLA4q7nvvCug8WTqzQveOH26fodo7g6uFe/a17W3+nFBAkRYENRdb1vkkz1CH9cPsVy/jrhr27PqMYvENYNlHAIesRiBYwRy0V+8iXP8+/fvX11Mr7L7ECueb/r48eMqm7FuI2BGWDEG8cm+7G3NEOfmdcTQw4h9/55lhm7DekRYKQPZF2ArbXTAyu4kDYB2YxUzwg0gi/41ztHnfQG26HbGel/crVrm7tNY+/1btkOEAZ2M05r4FB7r9GbAIdxaZYrHdOsgJ/wCEQY0J74TmOKnbxxT9n3FgGGWWsVdowHtjt9Nnvf7yQM2aZU/TIAIAxrw6dOnAWtZZcoEnBpNuTuObWMEiLAx1HY0ZQJEmHJ3HNvGCBBhY6jtaMoEiJB0Z29vL6ls58vxPcO8/zfrdo5qvKO+d3Fx8Wu8zf1dW4p/cPzLly/dtv9Ts/EbcvGAHhHyfBIhZ6NSiIBTo0LNNtScABFyNiqFCBChULMNNSdAhJyNSiECRCjUbEPNCRAhZ6NSiAARCjXbUHMCRMjZqBQiQIRCzTbUnAARcjYqhQgQoVCzDTUnQIScjUohAkQo1GxDzQkQIWejUogAEQo121BzAkTI2agUIkCEQs021JwAEXI2KoUIEKFQsw01J0CEnI1KIQJEKNRsQ80JECFno1KIABEKNdtQcwJEyNmoFCJAhELNNtScABFyNiqFCBChULMNNSdAhJyNSiECRCjUbEPNCRAhZ6NSiAARCjXbUHMCRMjZqBQiQIRCzTbUnAARcjYqhQgQoVCzDTUnQIScjUohAkQo1GxDzQkQIWejUogAEQo121BzAkTI2agUIkCEQs021JwAEXI2KoUIEKFQsw01J0CEnI1KIQJEKNRsQ80JECFno1KIABEKNdtQcwJEyNmoFCJAhELNNtScABFyNiqFCBChULMNNSdAhJyNSiECRCjUbEPNCRAhZ6NSiAARCjXbUHMCRMjZqBQiQIRCzTbUnAARcjYqhQgQoVCzDTUnQIScjUohAkQo1GxDzQkQIWejUogAEQo121BzAkTI2agUIkCEQs021JwAEXI2KoUIEKFQsw01J0CEnI1KIQJEKNRsQ80JECFno1KIABEKNdtQcwJEyNmoFCJAhELNNtScABFyNiqFCBChULMNNSdAhJyNSiEC/wGgKKC4YMA4TAAAAABJRU5ErkJggg=="
+              />
+              <Input
+                placeholder="结果"
+                className={styles.inputnumber}
+                status={inputType}
+                onChange={(e: any) => {
+                  setVerificationImage((item: any) => {
+                    return {
+                      ...item,
+                      value: e.target.value.toString(),
+                    };
+                  });
+                }}
+              />
+            </div>
+          </Modal>
         </div>
       )}
-
-      <Modal
-        title="验证"
-        open={isModalOpen}
-        onOk={() => {
-          validate();
-        }}
-        onCancel={() => {
-          setIsModalOpen(false);
-        }}
-        style={{ top: 20 }}
-        width={'60vw'}
-        okText={'validate'}
-        cancelButtonProps={{ style: { display: 'none' } }}
-        className={styles.validate_modal}
-      >
-        <div className={styles.validate_content}>
-          <Image
-            width={'100%'}
-            height={77}
-            preview={false}
-            title="点击刷新"
-            key={verificationImage.id}
-            src={verificationImage.image}
-            onClick={() => ejectModal()}
-            fallback="data:image/png;base64,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"
-          />
-          <Input
-            placeholder="结果"
-            className={styles.inputnumber}
-            status={inputType}
-            onChange={(e: any) => {
-              setVerificationImage((item: any) => {
-                return {
-                  ...item,
-                  value: e.target.value.toString(),
-                };
-              });
-            }}
-          />
-        </div>
-      </Modal>
-    </div>
+    </>
   );
 };
 
