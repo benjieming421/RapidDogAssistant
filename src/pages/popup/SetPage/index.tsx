@@ -1,11 +1,9 @@
 import { searchToken } from '@/axios/api';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import DebounceSelect from './components/SearchInput';
 import styles from './index.less';
 
 const index = () => {
-  const [value, setValue] = useState([]);
-
   useEffect(() => {}, []);
 
   async function fetchUserList(keyword: string): Promise<UserValue[]> {
@@ -18,7 +16,6 @@ const index = () => {
         <div className={styles.tip}>添加新代币：</div>
         <DebounceSelect
           mode="multiple"
-          value={value}
           placeholder={'请输入合约地址或代币名称'}
           fetchOptions={fetchUserList}
           onChange={(newValue) => {

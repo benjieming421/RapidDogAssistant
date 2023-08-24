@@ -88,3 +88,14 @@ export const priceConverter = (price: number, decimal: number) => {
     return '请重新刷新';
   }
 };
+
+//价格转换器 1000 => 1k 10000 => 10k
+export const priceConverterK = (price: number) => {
+  if (price >= 10000) {
+    return (price / 1000).toFixed(0) + 'k';
+  } else if (price >= 1000) {
+    return (price / 1000).toFixed(1) + 'k';
+  } else {
+    return price.toString();
+  }
+};
