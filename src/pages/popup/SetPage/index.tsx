@@ -1,12 +1,13 @@
 import { searchToken } from '@/axios/api';
 import { useEffect } from 'react';
+import EditTable from './components/EditTable';
 import DebounceSelect from './components/SearchInput';
 import styles from './index.less';
 
 const index = () => {
   useEffect(() => {}, []);
 
-  async function fetchUserList(keyword: string): Promise<UserValue[]> {
+  async function fetchUserList(keyword: string): Promise<any> {
     return searchToken(keyword);
   }
 
@@ -23,6 +24,9 @@ const index = () => {
           }}
           className={styles.search_input}
         />
+      </div>
+      <div className={styles.edittable}>
+        <EditTable />
       </div>
     </div>
   );

@@ -26,10 +26,42 @@
         .tip {
             font-size: 15px;
             font-weight: 100;
+            position: relative;
+
+            &::before {
+                content: '';
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                background-color: #008026;
+                position: absolute;
+                left: -10px;
+                top: 50%;
+                transform: translateY(-50%);
+                animation: blink 2.5s infinite;
+            }
+
+            @keyframes blink {
+                0% {
+                    opacity: 1;
+                }
+
+                50% {
+                    opacity: 0.3;
+                }
+
+                100% {
+                    opacity: 1;
+                }
+            }
         }
 
         .search_input {
             width: 400px;
         }
+    }
+
+    .edittable {
+        padding: 11px 24px;
     }
 }
