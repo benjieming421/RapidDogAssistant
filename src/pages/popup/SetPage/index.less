@@ -17,6 +17,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: relative;
 
     .search_content {
         display: flex;
@@ -63,5 +64,30 @@
 
     .edittable {
         padding: 11px 24px;
+        min-height: 330px;
+    }
+
+    .sbms {
+        display: flex;
+        align-items: center;
+        line-height: 1;
+        position: absolute;
+        bottom: 79px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80%;
+
+        .title {}
+        .jmhd,.tmd {
+            display: flex;
+            align-items: center;
+            width: 250px;
+
+            &>div {
+                &:nth-child(2) {
+                    flex:  1;
+                }
+            }
+        }
     }
 }
