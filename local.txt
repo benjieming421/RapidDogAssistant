@@ -6,3 +6,4 @@ updateBtn --- 用于监听更新按钮的 Boolean
 jmhd --- 界面灰度
 tmd --- 透明度
 tbgz --- 特别关注
+coinList-detail-setList --- 持有数量列表

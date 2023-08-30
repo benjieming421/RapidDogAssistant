@@ -72,6 +72,7 @@ async function fetchDataAndUpdate(apilist = [], index = 0) {
     coinListDetail[lastIndex] = result?.data?.token || {};
     coinListDetail[lastIndex].time = getNowTime();
     coinListDetail[lastIndex].timespare = new Date().getTime();
+    coinListDetail[lastIndex].key = result?.data?.token?.token + '-' + result?.data?.token?.chain;
     coinListDetail[lastIndex].dexname =
       result?.data?.pairs?.[0]?.show_name || '-';
     await sessionT.set('coinList-detail', coinListDetail);

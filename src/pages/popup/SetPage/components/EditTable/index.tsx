@@ -11,9 +11,10 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { InputRef } from 'antd';
-import { Button, Form, Input, Switch, Table } from 'antd';
+import { Button, Form, Input, message, Switch, Table } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import type { ColumnsType } from 'antd/es/table';
+import clonedeep from 'lodash.clonedeep';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
 
@@ -111,10 +112,10 @@ const EditableCell: React.FC<EditableCellProps> = ({
     form.setFieldsValue({ [dataIndex]: record[dataIndex] });
   };
 
-  const save = async () => {
+  const inputsave = async () => {
     try {
-      const values = await form.validateFields();
-
+      let values = await form.validateFields();
+      values = { cysl: parseFloat(values.cysl) };
       toggleEdit();
       handleSave({ ...record, ...values });
     } catch (errInfo) {
@@ -136,7 +137,12 @@ const EditableCell: React.FC<EditableCellProps> = ({
           },
         ]}
       >
-        <Input ref={inputRef} onPressEnter={save} onBlur={save} type={'text'}/>
+        <Input
+          ref={inputRef}
+          onPressEnter={inputsave}
+          onBlur={inputsave}
+          type={'text'}
+        />
       </Form.Item>
     ) : (
       <div
@@ -165,6 +171,7 @@ type ColumnTypes = Exclude<EditableTableProps['columns'], undefined>;
 
 const App: React.FC = () => {
   const [dataSource, setDataSource] = useState<any>([]);
+  const [dataSource_recode, setDataSource_recode] = useState<any>([]);
 
   //特别关注按钮
   const [tbgz, setTbgz] = useState<number>(-1);
@@ -176,24 +183,45 @@ const App: React.FC = () => {
       let tbgzType = await sessionT.get('tbgz');
       tbgzType && setTbgz(parseInt(tbgzType));
 
-      const items = setTimeout( async () => {
-        //初始化表格数据
+      const items = setTimeout(async () => {
         let dataSourceType = await sessionT.get('coinList-detail');
-        setDataSource(() => datasourceFun(dataSourceType));
-      }, 8000);
+        setDataSource_recode(dataSourceType);
+        clearTimeout(items);
+      }, 4000);
 
     })();
   }, []);
 
+  useEffect(() => {
+    //初始化表格数据
+    initdataSoure();
+
+    console.log(dataSource_recode,'dataSource_recode 移动后的数据');
+  }, [dataSource_recode]);
+
+  //从储存coinList-detail拿值给datasource
+  const initdataSoure = () => {
+    const items = setTimeout(async () => {
+      let dataSourceType = await sessionT.get('coinList-detail');
+      let datasourceFunResult = await datasourceFun(dataSourceType);
+      setDataSource(datasourceFunResult);
+
+      clearTimeout(items);
+    }, 4000);
+  };
+
   //清洗数据返回给datasource
-  const datasourceFun = (data: any) => {
+  const datasourceFun = async (data: any) => {
+    let setListList = (await sessionT.get('coinList-detail-setList')) ?? {};
     let arr: any[] = [];
     data.forEach((item: any, index: number) => {
+      let setListSpare =  setListList?.[`${item?.token+'-'+item?.chain}`] ?? {};
       let obj = {
-        key: index,
+        key: item?.key ?? index,
         symbol: item?.symbol ?? '-',
-        token: (item?.token ?? '-') + '-' + (item?.chain ?? '未知链'),
-        cysl: 0,
+        token: item?.token ?? '-',
+        chain: item?.chain ?? '未知链',
+        cysl: setListSpare?.cysl ?? 0,
       };
       arr.push(obj);
     });
@@ -224,6 +252,7 @@ const App: React.FC = () => {
     }
   };
 
+  //持有数量input保存函数
   const handleSave = (row: DataType) => {
     const newData = [...dataSource];
     const index = newData.findIndex((item) => row.key === item.key);
@@ -233,6 +262,21 @@ const App: React.FC = () => {
       ...row,
     });
     setDataSource(newData);
+    addSession(`${item.token+'-'+item.chain}`,{cysl:row.cysl});
+  };
+
+  //根据key数据保存到session -> coinList-detail 函数
+  const addSession = async (key:string,data:any) => {
+    try {
+      const recoList = (await sessionT.get('coinList-detail-setList')) ?? {};
+      let backupsData = clonedeep((recoList?.[key] ?? {}));
+      recoList[key] = { ...backupsData,...data  }
+      await sessionT.set('coinList-detail-setList', recoList);
+      console.log(recoList,'保存数据成功');
+    } catch (error) {
+      console.log(error, '保存数据失败');
+      message.error('保存数据失败');
+    }
   };
 
   const components = {
@@ -259,6 +303,13 @@ const App: React.FC = () => {
       dataIndex: 'token',
       width: '30%',
       align: 'center',
+      render: (text, record, index) => {
+        return (
+          <span>
+            {record.token}-{record.chain}
+          </span>
+        );
+      },
     },
     {
       title: '持有数量',
@@ -284,8 +335,8 @@ const App: React.FC = () => {
       dataIndex: 'delete',
       align: 'center',
       render: (text, record, index) => (
-        <Button type="text" danger>
-          delete
+        <Button type="text">
+          <span style={{color: '#1677ff'}}>delete</span>
         </Button>
       ),
     },
@@ -309,11 +360,21 @@ const App: React.FC = () => {
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (active.id !== over?.id) {
-      setDataSource((previous) => {
+      setDataSource((previous:any) => {
         const activeIndex = previous.findIndex((i) => i.key === active.id);
         const overIndex = previous.findIndex((i) => i.key === over?.id);
         return arrayMove(previous, activeIndex, overIndex);
       });
+
+      // setDataSource_recode((previous:any) => {
+      //   const newPrevious = clonedeep(previous);
+      //   const activeIndex = newPrevious.findIndex((i) => i?.key === active?.id);
+      //   const overIndex = newPrevious.findIndex((i) => i?.key === over?.id);
+      //   // return arrayMove(newPrevious, activeIndex, overIndex);
+      //   newPrevious.splice(activeIndex,1 ,newPrevious[overIndex]);
+      //   newPrevious.splice(overIndex,1 ,newPrevious[activeIndex]);
+      //   return newPrevious;
+      // });
     }
   };
 
@@ -321,7 +382,7 @@ const App: React.FC = () => {
     <DndContext modifiers={[restrictToVerticalAxis]} onDragEnd={onDragEnd}>
       <SortableContext
         // rowKey array
-        items={dataSource.map((i) => i.key)}
+        items={dataSource?.map((i:any) => i.key)}
         strategy={verticalListSortingStrategy}
       >
         <Table

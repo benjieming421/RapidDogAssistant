@@ -340,6 +340,7 @@ const Popup = () => {
       coinListDetail[index] = result?.data?.token || {};
       coinListDetail[index].time = getNowTime();
       coinListDetail[index].timespare = new Date().getTime();
+      coinListDetail[index].key = result?.data?.token?.token + '-' + result?.data?.token?.chain;
       coinListDetail[index].dexname =
         result?.data?.pairs?.[0]?.show_name || '-';
       await sessionT.set('coinList-detail', coinListDetail);
