@@ -1,3 +1,4 @@
+import sessionT from '@/utils/session';
 import { MenuOutlined } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { DndContext } from '@dnd-kit/core';
@@ -10,7 +11,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { InputRef } from 'antd';
-import { Form, Input, Popconfirm, Table } from 'antd';
+import { Button, Form, Input, Switch, Table } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useContext, useEffect, useRef, useState } from 'react';
@@ -131,11 +132,11 @@ const EditableCell: React.FC<EditableCellProps> = ({
         rules={[
           {
             required: true,
-            message: `${title} is required.`,
+            message: `${title} 必须填写`,
           },
         ]}
       >
-        <Input ref={inputRef} onPressEnter={save} onBlur={save} />
+        <Input ref={inputRef} onPressEnter={save} onBlur={save} type={'text'}/>
       </Form.Item>
     ) : (
       <div
@@ -163,38 +164,41 @@ interface DataType {
 type ColumnTypes = Exclude<EditableTableProps['columns'], undefined>;
 
 const App: React.FC = () => {
-  const [dataSource, setDataSource] = useState([
-    {
-      key: '0',
-      name: 'Edward King 0',
-      age: 32,
-      address: 'London, Park Lane no. 0',
-    },
-    {
-      key: '1',
-      name: 'Edward King 1',
-      age: 33,
-      address: 'London, Park Lane no. 1',
-    },
-    {
-      key: '2',
-      name: 'Edward King 1',
-      age: 34,
-      address: 'London, Park Lane no. 1',
-    },
-    {
-      key: '3',
-      name: 'Edward King 1',
-      age: 35,
-      address: 'London, Park Lane no. 1',
-    },
-    {
-      key: '4',
-      name: 'Edward King 1',
-      age: 36,
-      address: 'London, Park Lane no. 1',
-    },
-  ]);
+  const [dataSource, setDataSource] = useState<any>([]);
+
+  //特别关注按钮
+  const [tbgz, setTbgz] = useState<number>(-1);
+
+  //初始化
+  useEffect(() => {
+    (async () => {
+      //初始化特别关注
+      let tbgzType = await sessionT.get('tbgz');
+      tbgzType && setTbgz(parseInt(tbgzType));
+
+      const items = setTimeout( async () => {
+        //初始化表格数据
+        let dataSourceType = await sessionT.get('coinList-detail');
+        setDataSource(() => datasourceFun(dataSourceType));
+      }, 8000);
+
+    })();
+  }, []);
+
+  //清洗数据返回给datasource
+  const datasourceFun = (data: any) => {
+    let arr: any[] = [];
+    data.forEach((item: any, index: number) => {
+      let obj = {
+        key: index,
+        symbol: item?.symbol ?? '-',
+        token: (item?.token ?? '-') + '-' + (item?.chain ?? '未知链'),
+        cysl: 0,
+      };
+      arr.push(obj);
+    });
+    return arr;
+  };
 
   const handleDelete = (key: React.Key) => {
     const newData = dataSource.filter((item) => item.key !== key);
@@ -203,51 +207,22 @@ const App: React.FC = () => {
 
   interface DataType {
     key: string;
-    name: string;
-    age: number;
-    address: string;
+    symbol: string;
+    token: number;
+    cysl: string;
     editable?: boolean;
     dataIndex: string;
   }
 
-  const defaultColumns: ColumnsType<DataType> = [
-    {
-      title: '拖拽',
-      key: 'sort',
-      width: 50,
-      align: 'center',
-    },
-    {
-      title: 'name',
-      dataIndex: 'name',
-      width: '30%',
-      editable: true,
-      align: 'center',
-    },
-    {
-      title: 'age',
-      dataIndex: 'age',
-      align: 'center',
-    },
-    {
-      title: 'address',
-      dataIndex: 'address',
-      align: 'center',
-    },
-    {
-      title: 'operation',
-      dataIndex: 'operation',
-      render: (_, record: { key: React.Key }) =>
-        dataSource.length >= 1 ? (
-          <Popconfirm
-            title="Sure to delete?"
-            onConfirm={() => handleDelete(record.key)}
-          >
-            <a>Delete</a>
-          </Popconfirm>
-        ) : null,
-    },
-  ];
+  const tbgzFun = (checked: boolean, index: number) => {
+    if (checked) {
+      setTbgz(index);
+      sessionStorage.setItem('tbgz', index.toString());
+    } else {
+      setTbgz(-1);
+      sessionStorage.setItem('tbgz', '-1');
+    }
+  };
 
   const handleSave = (row: DataType) => {
     const newData = [...dataSource];
@@ -266,6 +241,55 @@ const App: React.FC = () => {
       cell: EditableCell,
     },
   };
+
+  const defaultColumns: ColumnsType<DataType> = [
+    {
+      title: '拖拽',
+      key: 'sort',
+      width: 50,
+      align: 'center',
+    },
+    {
+      title: '代币',
+      dataIndex: 'symbol',
+      align: 'center',
+    },
+    {
+      title: '合约地址-所属链',
+      dataIndex: 'token',
+      width: '30%',
+      align: 'center',
+    },
+    {
+      title: '持有数量',
+      dataIndex: 'cysl',
+      align: 'center',
+      editable: true,
+    },
+    {
+      title: '特别关注',
+      dataIndex: 'tbgz',
+      align: 'center',
+      render: (text, record, index) => (
+        <Switch
+          checkedChildren="开启"
+          unCheckedChildren="关闭"
+          checked={tbgz == index}
+          onClick={(checked: boolean, event) => tbgzFun(checked, index)}
+        />
+      ),
+    },
+    {
+      title: '删除',
+      dataIndex: 'delete',
+      align: 'center',
+      render: (text, record, index) => (
+        <Button type="text" danger>
+          delete
+        </Button>
+      ),
+    },
+  ];
 
   const columns = defaultColumns.map((col) => {
     if (!col.editable) {

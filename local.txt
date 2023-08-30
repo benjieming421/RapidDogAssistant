@@ -3,3 +3,6 @@
 coinList -- 简单的待请求币列表
 coinList-detail --- 接口返回的币列表，数据很多包含官网、白皮书、logo、价格等
 updateBtn --- 用于监听更新按钮的 Boolean
+jmhd --- 界面灰度
+tmd --- 透明度
+tbgz --- 特别关注
