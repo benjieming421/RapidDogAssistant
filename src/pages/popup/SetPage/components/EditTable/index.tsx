@@ -171,33 +171,21 @@ type ColumnTypes = Exclude<EditableTableProps['columns'], undefined>;
 
 const App: React.FC = () => {
   const [dataSource, setDataSource] = useState<any>([]);
-  const [dataSource_recode, setDataSource_recode] = useState<any>([]);
 
   //特别关注按钮
   const [tbgz, setTbgz] = useState<number>(-1);
 
-  //初始化
+
   useEffect(() => {
     (async () => {
       //初始化特别关注
       let tbgzType = await sessionT.get('tbgz');
       tbgzType && setTbgz(parseInt(tbgzType));
-
-      const items = setTimeout(async () => {
-        let dataSourceType = await sessionT.get('coinList-detail');
-        setDataSource_recode(dataSourceType);
-        clearTimeout(items);
-      }, 4000);
-
+      //初始化datasource
+      initdataSoure();
     })();
   }, []);
 
-  useEffect(() => {
-    //初始化表格数据
-    initdataSoure();
-
-    console.log(dataSource_recode,'dataSource_recode 移动后的数据');
-  }, [dataSource_recode]);
 
   //从储存coinList-detail拿值给datasource
   const initdataSoure = () => {
@@ -358,23 +346,27 @@ const App: React.FC = () => {
     };
   });
 
-  const onDragEnd = ({ active, over }: DragEndEvent) => {
+  const onDragEnd = async ({ active, over }: DragEndEvent) => {
     if (active.id !== over?.id) {
+      let core:any = [];
       setDataSource((previous:any) => {
         const activeIndex = previous.findIndex((i) => i.key === active.id);
         const overIndex = previous.findIndex((i) => i.key === over?.id);
-        return arrayMove(previous, activeIndex, overIndex);
+        core =  arrayMove(previous, activeIndex, overIndex);
+        console.log(core,'dataSource 移动的数据');
+        return core;
       });
-
-      // setDataSource_recode((previous:any) => {
-      //   const newPrevious = clonedeep(previous);
-      //   const activeIndex = newPrevious.findIndex((i) => i?.key === active?.id);
-      //   const overIndex = newPrevious.findIndex((i) => i?.key === over?.id);
-      //   // return arrayMove(newPrevious, activeIndex, overIndex);
-      //   newPrevious.splice(activeIndex,1 ,newPrevious[overIndex]);
-      //   newPrevious.splice(overIndex,1 ,newPrevious[activeIndex]);
-      //   return newPrevious;
-      // });
+      
+      //coinListRef.current数据根据key值按照core的key值排序
+      let coinList = await sessionT.get('coinList');
+      let coinListobj = clonedeep(coinList);
+      let coinListRefCurrentObj:Array<any> = [];
+      core.forEach((d:any) => {
+        let result = coinListobj.filter((idx:any) => `${idx?.contract}-${idx?.chain}` === d.key);
+        coinListRefCurrentObj.push(result?.[0] ?? {});
+      });
+      await sessionT.set('coinList', coinListRefCurrentObj);
+      console.log(coinListRefCurrentObj,'coinList 移动后的默认列表数据');
     }
   };
 

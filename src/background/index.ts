@@ -37,7 +37,12 @@ const coinList = [
 ];
 
 (async () => {
-  await sessionT.set('coinList', coinList);
+  let data = await sessionT.get('coinList');
+  if(Object.keys(data).length == 0) {
+    await sessionT.set('coinList', coinList);
+    console.log(data,'执行给的coinList 默认请求列表复制');
+  }
+  console.log(data,'后台的coinList 默认请求列表');
   await sessionT.set('coinList-detail', []);
 })();
 
