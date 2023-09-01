@@ -115,7 +115,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
   const inputsave = async () => {
     try {
       let values = await form.validateFields();
-      values = { cysl: parseFloat(values.cysl) };
+      values = {[Object.keys(values)[0]]: parseFloat(values[Object.keys(values)[0]])};
       toggleEdit();
       handleSave({ ...record, ...values });
     } catch (errInfo) {
@@ -173,19 +173,17 @@ const App: React.FC = () => {
   const [dataSource, setDataSource] = useState<any>([]);
 
   //特别关注按钮
-  const [tbgz, setTbgz] = useState<number>(-1);
-
+  const [tbgz, setTbgz] = useState<any>('');
 
   useEffect(() => {
     (async () => {
       //初始化特别关注
-      let tbgzType = await sessionT.get('tbgz');
-      tbgzType && setTbgz(parseInt(tbgzType));
+      let tbgzType = await sessionT.get('tbgz') ?? '';
+      setTbgz(tbgzType);
       //初始化datasource
       initdataSoure();
     })();
   }, []);
-
 
   //从储存coinList-detail拿值给datasource
   const initdataSoure = () => {
@@ -203,13 +201,15 @@ const App: React.FC = () => {
     let setListList = (await sessionT.get('coinList-detail-setList')) ?? {};
     let arr: any[] = [];
     data.forEach((item: any, index: number) => {
-      let setListSpare =  setListList?.[`${item?.token+'-'+item?.chain}`] ?? {};
+      let setListSpare =
+        setListList?.[`${item?.token + '-' + item?.chain}`] ?? {};
       let obj = {
         key: item?.key ?? index,
         symbol: item?.symbol ?? '-',
         token: item?.token ?? '-',
         chain: item?.chain ?? '未知链',
         cysl: setListSpare?.cysl ?? 0,
+        cyjg: setListSpare?.cyjg ?? 0,
       };
       arr.push(obj);
     });
@@ -226,17 +226,19 @@ const App: React.FC = () => {
     symbol: string;
     token: number;
     cysl: string;
+    cyjg: string;
     editable?: boolean;
     dataIndex: string;
+    chain: string;
   }
 
-  const tbgzFun = (checked: boolean, index: number) => {
+  const tbgzFun = (checked: boolean, key: string) => {
     if (checked) {
-      setTbgz(index);
-      sessionStorage.setItem('tbgz', index.toString());
+      setTbgz(key);
+      sessionStorage.setItem('tbgz', key);
     } else {
-      setTbgz(-1);
-      sessionStorage.setItem('tbgz', '-1');
+      setTbgz('');
+      sessionStorage.setItem('tbgz', '');
     }
   };
 
@@ -250,20 +252,66 @@ const App: React.FC = () => {
       ...row,
     });
     setDataSource(newData);
-    addSession(`${item.token+'-'+item.chain}`,{cysl:row.cysl});
+    addSession(`${item.token + '-' + item.chain}`, { cysl: row.cysl,cyjg: row.cyjg });
   };
 
   //根据key数据保存到session -> coinList-detail 函数
-  const addSession = async (key:string,data:any) => {
+  const addSession = async (key: string, data: any) => {
     try {
       const recoList = (await sessionT.get('coinList-detail-setList')) ?? {};
-      let backupsData = clonedeep((recoList?.[key] ?? {}));
-      recoList[key] = { ...backupsData,...data  }
+      let backupsData = clonedeep(recoList?.[key] ?? {});
+      recoList[key] = { ...backupsData, ...data };
       await sessionT.set('coinList-detail-setList', recoList);
-      console.log(recoList,'保存数据成功');
+      console.log(recoList, '保存数据成功');
     } catch (error) {
       console.log(error, '保存数据失败');
       message.error('保存数据失败');
+    }
+  };
+
+  //删除代币列表 根据token（contract）-chain 生成key值查找删除
+  const delectSomeCoinList = async (key: string) => {
+    try {
+      let coinList = await sessionT.get('coinList');
+      let coinListDetail = await sessionT.get('coinList-detail');
+      let coinListDetailSetList = await sessionT.get('coinList-detail-setList');
+
+      let coinListobjCore = clonedeep(coinList);
+      let coinListDetailCore = clonedeep(coinListDetail);
+      let coinListDetailSetListCore = clonedeep(coinListDetailSetList);
+      let dataSourceCore = clonedeep(dataSource);
+
+      let bgfindindex = coinListobjCore.findIndex(
+        (idx: any) => `${idx?.contract}-${idx?.chain}` === key,
+      );
+      let coinListDetailFindindex = coinListDetailCore.findIndex(
+        (idx: any) => `${idx?.token}-${idx?.chain}` === key,
+      );
+      let tablesouceDataFindindex = dataSource.findIndex(
+        (idx: any) => `${idx?.token}-${idx?.chain}` === key,
+      );
+
+      if (
+        bgfindindex !== -1 &&
+        tablesouceDataFindindex !== -1 &&
+        coinListDetailFindindex !== -1
+      ) {
+        //默认请求列表删除
+        coinListobjCore.splice(bgfindindex, 1);
+        await sessionT.set('coinList', coinListobjCore);
+
+        coinListDetailCore.splice(coinListDetailFindindex, 1);
+        await sessionT.set('coinList-detail', coinListDetailCore);
+
+        dataSourceCore.splice(tablesouceDataFindindex, 1);
+        setDataSource(dataSourceCore);
+
+        delete coinListDetailSetListCore[key];
+        await sessionT.set('coinList-detail-setList', coinListDetailSetListCore);
+      }
+    } catch (error) {
+      console.log(error, '表格icon删除失败');
+      message.error('删除失败');
     }
   };
 
@@ -285,6 +333,13 @@ const App: React.FC = () => {
       title: '代币',
       dataIndex: 'symbol',
       align: 'center',
+      render:(text, record, index) => {
+        return (
+          <span>
+            {text}/USDT
+          </span>
+        );
+      },
     },
     {
       title: '合约地址-所属链',
@@ -306,6 +361,12 @@ const App: React.FC = () => {
       editable: true,
     },
     {
+      title: '持有数量',
+      dataIndex: 'cyjg',
+      align: 'center',
+      editable: true,
+    },
+    {
       title: '特别关注',
       dataIndex: 'tbgz',
       align: 'center',
@@ -313,8 +374,8 @@ const App: React.FC = () => {
         <Switch
           checkedChildren="开启"
           unCheckedChildren="关闭"
-          checked={tbgz == index}
-          onClick={(checked: boolean, event) => tbgzFun(checked, index)}
+          checked={tbgz == `${record.token}-${record.chain}`}
+          onClick={(checked: boolean, event) => tbgzFun(checked, `${record.token}-${record.chain}`)}
         />
       ),
     },
@@ -323,8 +384,13 @@ const App: React.FC = () => {
       dataIndex: 'delete',
       align: 'center',
       render: (text, record, index) => (
-        <Button type="text">
-          <span style={{color: '#1677ff'}}>delete</span>
+        <Button
+          type="text"
+          onClick={() => delectSomeCoinList(`${record.token}-${record.chain}`)}
+        >
+          <span style={{ color: '#1677ff' }} title="点击删除">
+            delete
+          </span>
         </Button>
       ),
     },
@@ -348,25 +414,27 @@ const App: React.FC = () => {
 
   const onDragEnd = async ({ active, over }: DragEndEvent) => {
     if (active.id !== over?.id) {
-      let core:any = [];
-      setDataSource((previous:any) => {
+      let core: any = [];
+      setDataSource((previous: any) => {
         const activeIndex = previous.findIndex((i) => i.key === active.id);
         const overIndex = previous.findIndex((i) => i.key === over?.id);
-        core =  arrayMove(previous, activeIndex, overIndex);
-        console.log(core,'dataSource 移动的数据');
+        core = arrayMove(previous, activeIndex, overIndex);
+        console.log(core, 'dataSource 移动的数据');
         return core;
       });
-      
+
       //coinListRef.current数据根据key值按照core的key值排序
       let coinList = await sessionT.get('coinList');
       let coinListobj = clonedeep(coinList);
-      let coinListRefCurrentObj:Array<any> = [];
-      core.forEach((d:any) => {
-        let result = coinListobj.filter((idx:any) => `${idx?.contract}-${idx?.chain}` === d.key);
+      let coinListRefCurrentObj: Array<any> = [];
+      core.forEach((d: any) => {
+        let result = coinListobj.filter(
+          (idx: any) => `${idx?.contract}-${idx?.chain}` === d.key,
+        );
         coinListRefCurrentObj.push(result?.[0] ?? {});
       });
       await sessionT.set('coinList', coinListRefCurrentObj);
-      console.log(coinListRefCurrentObj,'coinList 移动后的默认列表数据');
+      console.log(coinListRefCurrentObj, 'coinList 移动后的默认列表数据');
     }
   };
 
@@ -374,7 +442,7 @@ const App: React.FC = () => {
     <DndContext modifiers={[restrictToVerticalAxis]} onDragEnd={onDragEnd}>
       <SortableContext
         // rowKey array
-        items={dataSource?.map((i:any) => i.key)}
+        items={dataSource?.map((i: any) => i.key)}
         strategy={verticalListSortingStrategy}
       >
         <Table

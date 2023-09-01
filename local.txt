@@ -5,5 +5,5 @@ coinList-detail --- 接口返回的币列表，数据很多包含官网、白皮
 updateBtn --- 用于监听更新按钮的 Boolean
 jmhd --- 界面灰度
 tmd --- 透明度
-tbgz --- 特别关注
-coinList-detail-setList --- 持有数量列表
+tbgz --- 特别关注 格式 `${token}-${chain}`
+coinList-detail-setList --- 持有数量 持有价格列表  //格式 {cyjg: 9999, cysl: 23}

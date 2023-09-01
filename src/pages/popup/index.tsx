@@ -95,6 +95,7 @@ const columns: ColumnsType<DataType> = [
     title: '价格',
     dataIndex: 'current_price_usd',
     align: 'center',
+    render: (price) => <div>${price}/USDT</div>,
   },
   {
     title: '涨跌幅',
@@ -570,7 +571,7 @@ const Card = (datarposp: any) => {
     >
       <div className={styles.title}>{data?.symbol || '请重新刷新'}</div>
       <div className={styles.price}>
-        ${priceConverter(data?.current_price_usd, data?.decimal)}
+        ${priceConverter(data?.current_price_usd, data?.decimal)}/USDT
       </div>
       <div className={styles.footer}>
         {data?.price_change < 0

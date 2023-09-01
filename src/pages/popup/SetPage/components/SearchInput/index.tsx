@@ -123,7 +123,7 @@ function DebounceSelect<
                     </div>
                   </div>
                   <div>
-                    ${priceConverter(item?.current_price_usd, item?.decimal)}
+                    ${priceConverter(item?.current_price_usd, item?.decimal)}/USDT
                   </div>
                   <div
                     style={{

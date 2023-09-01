@@ -1,5 +1,5 @@
 import { getToken } from '@/axios/api';
-import { clearTimeoutList, getNowTime } from '@/utils/index';
+import { clearTimeoutList, getNowTime, priceConverterK } from '@/utils/index';
 import sessionT from '@/utils/session';
 
 //接口循环定时器
@@ -37,29 +37,23 @@ const coinList = [
 ];
 
 (async () => {
-  let data = await sessionT.get('coinList');
-  if(Object.keys(data).length == 0) {
+  let data = (await sessionT.get('coinList')) ?? {};
+  if (Object.keys(data).length == 0) {
     await sessionT.set('coinList', coinList);
-    console.log(data,'执行给的coinList 默认请求列表复制');
+    console.log(data, '执行给的coinList 默认请求列表复制');
   }
-  console.log(data,'后台的coinList 默认请求列表');
+  console.log(data, '后台的coinList 默认请求列表');
   await sessionT.set('coinList-detail', []);
-})();
 
-const add = () => {
-  chrome.notifications.create(
-    '',
-    {
-      type: 'basic',
-      iconUrl: chrome.runtime.getURL('/logo/logo@16.png'),
-      title: '插件被点击启动',
-      message: 'Notification message',
-    },
-    (notificationId) => {
-      console.log('Notification created!', notificationId);
-    },
-  );
-};
+  const titles = `特别关注：
+  ETH/USDT ${0.00026041}
+  涨跌幅    15.44%
+  持有人数  1.2万`;
+
+  chrome.action.setBadgeText({ text: priceConverterK(0.00026041) });
+  chrome.action.setTitle({ title: titles });
+  // chrome.action.setBadgeBackgroundColor({ color: '#FFFFFF' })
+})();
 
 //不定时循环请求coin接口 15-20秒
 async function fetchDataAndUpdate(apilist = [], index = 0) {
@@ -77,7 +71,8 @@ async function fetchDataAndUpdate(apilist = [], index = 0) {
     coinListDetail[lastIndex] = result?.data?.token || {};
     coinListDetail[lastIndex].time = getNowTime();
     coinListDetail[lastIndex].timespare = new Date().getTime();
-    coinListDetail[lastIndex].key = result?.data?.token?.token + '-' + result?.data?.token?.chain;
+    coinListDetail[lastIndex].key =
+      result?.data?.token?.token + '-' + result?.data?.token?.chain;
     coinListDetail[lastIndex].dexname =
       result?.data?.pairs?.[0]?.show_name || '-';
     await sessionT.set('coinList-detail', coinListDetail);
@@ -133,7 +128,7 @@ if (!chrome.runtime.lastError) {
     chrome.contextMenus.create({
       id: 'myContextMenu3306',
       title: '独立窗口打开',
-      contexts: ['all'],
+      contexts: ['browser_action'],
     });
   });
 
@@ -150,9 +145,11 @@ if (!chrome.runtime.lastError) {
           type: 'popup',
         },
         function (e) {
-          chrome.windows.update(e.id, {
-            focused: true,
-          });
+          if (e?.id) {
+            chrome.windows.update(e.id, {
+              focused: true,
+            });
+          }
         },
       );
     }
