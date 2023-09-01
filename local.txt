@@ -6,4 +6,5 @@ updateBtn --- 用于监听更新按钮的 Boolean
 jmhd --- 界面灰度
 tmd --- 透明度
 tbgz --- 特别关注 格式 `${token}-${chain}`
+badge-data 特别关注储存位置
 coinList-detail-setList --- 持有数量 持有价格列表  //格式 {cyjg: 9999, cysl: 23}

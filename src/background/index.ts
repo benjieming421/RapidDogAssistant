@@ -1,11 +1,16 @@
+
+
 import { getToken } from '@/axios/api';
 import { clearTimeoutList, getNowTime, priceConverterK } from '@/utils/index';
 import sessionT from '@/utils/session';
+import startPolling from './badge'
 
 //接口循环定时器
 let timesList: any = [];
 //实时更新数据的按钮
 let updateBtn: any = false;
+//badge轮询定时器
+let badgeTimes: any = null;
 
 //初始化把GAS BTC ETH BNB DOGE XRP 合约存内存上
 const coinList = [
@@ -45,14 +50,11 @@ const coinList = [
   console.log(data, '后台的coinList 默认请求列表');
   await sessionT.set('coinList-detail', []);
 
-  const titles = `特别关注：
-  ETH/USDT ${0.00026041}
-  涨跌幅    15.44%
-  持有人数  1.2万`;
-
-  chrome.action.setBadgeText({ text: priceConverterK(0.00026041) });
-  chrome.action.setTitle({ title: titles });
-  // chrome.action.setBadgeBackgroundColor({ color: '#FFFFFF' })
+  //初始化badge轮询
+  clearInterval(badgeTimes);
+  badgeTimes = setInterval(() => {
+    startPolling();
+  }, 3000);
 })();
 
 //不定时循环请求coin接口 15-20秒
@@ -119,6 +121,13 @@ chrome.runtime.onMessage.addListener(async function (
     //循环清除定时器
     clearTimeoutList(timesList);
     console.log('结束监听开始请求列表', getNowTime());
+  }else if (request.restartBadge) {
+    //监听清除badge轮询定时器
+    clearInterval(badgeTimes);
+    badgeTimes = setInterval(() => {
+      startPolling();
+    }, 3000);
+    console.log('重启badge轮询定时器', getNowTime());
   }
 });
 
@@ -169,4 +178,6 @@ if (!chrome.runtime.lastError) {
 const closePopupFun = async () => {
   //循环清除定时器
   clearTimeoutList(timesList);
+  //监听清除badge轮询定时器
+  clearInterval(badgeTimes);
 };
