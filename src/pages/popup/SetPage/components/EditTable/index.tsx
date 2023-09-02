@@ -232,13 +232,15 @@ const App: React.FC = () => {
     chain: string;
   }
 
-  const tbgzFun = (checked: boolean, key: string) => {
+  const tbgzFun = async (checked: boolean, key: string) => {
     if (checked) {
       setTbgz(key);
-      sessionStorage.setItem('tbgz', key);
+      await sessionT.set('tbgz', key);
+      chrome.runtime.sendMessage({ restartBadge: true });
     } else {
       setTbgz('');
-      sessionStorage.setItem('tbgz', '');
+      await sessionT.set('tbgz', '');
+      chrome.runtime.sendMessage({ restartBadge: true });
     }
   };
 
