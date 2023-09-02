@@ -1,7 +1,7 @@
 /*
  * @Author: benjieming421
  * @Date: 2023-09-01 23:56:04
- * @LastEditTime: 2023-09-02 00:39:42
+ * @LastEditTime: 2023-09-02 12:59:50
  * @FilePath: \RapidDogAssistant\src\background\badge\index.ts
  * @Description: 插件badge轮询
  *
@@ -9,7 +9,7 @@
  */
 
 import { getToken } from '@/axios/api';
-import { priceConverterK } from '@/utils';
+import { priceConverterK,getNowTime,priceConverter } from '@/utils';
 import sessionT from '@/utils/session';
 
 const coin = '0x2170ed0880ac9a755fd29b2688956bd959f933f8-bsc';
@@ -17,6 +17,7 @@ const coin = '0x2170ed0880ac9a755fd29b2688956bd959f933f8-bsc';
 //开始轮询
 const startPolling = async () => {
   try {
+    if (chrome.runtime.lastError) throw new Error("chrome.runtime.lastError");
     let badgeData: string = (await sessionT.get('tbgz')) ?? '';
     if (badgeData?.length == 0 || Object.keys(badgeData).length == 0) {
       await sessionT.set('tbgz', coin);
@@ -31,10 +32,11 @@ const startPolling = async () => {
         : `+${result?.token?.price_change || 0}` + '%';
 
     const titles = `特别关注：
-    ETH/USDT ${priceConverterK(result?.token?.current_price_usd ?? 0)}
+    ETH/USDT ${priceConverter(result?.token?.current_price_usd ?? 0)}
     涨跌幅    ${price_change}
     持有人数  ${result?.token?.holders ?? 0}
-    更新时间  ${result?.token?.time ?? '-'}`;
+    更新时间  ${getNowTime()}`;
+    
     chrome.action.setBadgeText({
       text: priceConverterK(result?.token?.current_price_usd ?? 0),
     });

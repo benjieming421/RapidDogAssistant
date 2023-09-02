@@ -5,12 +5,23 @@ import { clearTimeoutList, getNowTime, priceConverterK } from '@/utils/index';
 import sessionT from '@/utils/session';
 import startPolling from './badge'
 
+const INTERNAL_STAYALIVE_PORT = "CT_Internal_port_alive"
+var alivePort:any = null;
+
+const SECONDS = 1000;
+var lastCall = Date.now();
+var isFirstStart = true;
+var timer = 4*SECONDS;
+// -------------------------------------------------------
+var wakeup = setInterval(Highlander, timer);
+// -------------------------------------------------------
+
 //接口循环定时器
 let timesList: any = [];
 //实时更新数据的按钮
 let updateBtn: any = false;
 //badge轮询定时器
-let badgeTimes: any = null;
+let badgeTimes: any = [];
 
 //初始化把GAS BTC ETH BNB DOGE XRP 合约存内存上
 const coinList = [
@@ -51,10 +62,13 @@ const coinList = [
   await sessionT.set('coinList-detail', []);
 
   //初始化badge轮询
-  clearInterval(badgeTimes);
-  badgeTimes = setInterval(() => {
+  badgeTimes.forEach((element:any) => {
+    clearInterval(element);
+  });
+  let badgeTimesItems = setInterval(() => {
     startPolling();
   }, 3000);
+  badgeTimes.push(badgeTimesItems);
 })();
 
 //不定时循环请求coin接口 15-20秒
@@ -101,6 +115,7 @@ async function fetchDataAndUpdate(apilist = [], index = 0) {
   }
 }
 
+if (!chrome.runtime.lastError){
 chrome.runtime.onMessage.addListener(async function (
   request,
   sender,
@@ -130,6 +145,7 @@ chrome.runtime.onMessage.addListener(async function (
     console.log('重启badge轮询定时器', getNowTime());
   }
 });
+}
 
 //初始化右键上下菜单栏 添加独立窗口打开模式
 if (!chrome.runtime.lastError) {
@@ -179,5 +195,51 @@ const closePopupFun = async () => {
   //循环清除定时器
   clearTimeoutList(timesList);
   //监听清除badge轮询定时器
-  clearInterval(badgeTimes);
+  badgeTimes.forEach((element:any) => {
+    clearInterval(element);
+  });
 };
+
+async function Highlander() {
+
+  const now = Date.now();
+  const age = now - lastCall;
+  
+  console.log(`(DEBUG Highlander) ------------- time elapsed from first start: ${convertNoDate(age)}`)
+  if (alivePort == null) {
+      alivePort = chrome.runtime.connect({name:INTERNAL_STAYALIVE_PORT})
+
+      alivePort.onDisconnect.addListener( (p) => {
+          if (chrome.runtime.lastError){
+              console.log(`(DEBUG Highlander) Expected disconnect (on error). SW should be still running.`);
+          } else {
+              console.log(`(DEBUG Highlander): port disconnected`);
+          }
+
+          alivePort = null;
+      });
+  }
+
+  if (alivePort) {
+                  
+      alivePort.postMessage({content: "ping"});
+      
+      if (chrome.runtime.lastError) {                              
+          console.log(`(DEBUG Highlander): postMessage error: ${chrome.runtime.lastError.message}`)                
+      } else {                               
+          console.log(`(DEBUG Highlander): "ping" sent through ${alivePort.name} port`)
+      }            
+  }         
+  //lastCall = Date.now();
+  if (isFirstStart) {
+      isFirstStart = false;
+      clearInterval(wakeup);
+      timer = 270*SECONDS;
+      wakeup = setInterval(Highlander, timer);
+  }        
+}
+
+function convertNoDate(long:any) {
+  var dt = new Date(long).toISOString()
+  return dt.slice(-13, -5) // HH:MM:SS only
+}

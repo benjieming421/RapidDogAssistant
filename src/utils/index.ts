@@ -60,10 +60,10 @@ export const delay = (ms: number) => {
 };
 
 //价格转换器
-export const priceConverter = (price: number, decimal: number) => {
+export const priceConverter = (price: number, decimal?: number) => {
   try {
-    let spare = price?.toFixed(decimal || 18);
-    if (!spare) return;
+    let spare = price?.toFixed(decimal ?? 18);
+    if (!spare || typeof spare !== 'string') return;
     if (Number(spare.split('.')[0]) <= 0) {
       //获取点后面的0有多少位（截取到数字之前）
       let match = spare.match(/\.0+/);
