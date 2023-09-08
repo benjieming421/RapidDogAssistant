@@ -3,17 +3,6 @@ import { clearTimeoutList, getNowTime } from '@/utils/index';
 import sessionT from '@/utils/session';
 import startPolling from './badge';
 
-const INTERNAL_STAYALIVE_PORT = 'CT_Internal_port_alive';
-var alivePort: any = null;
-
-const SECONDS = 1000;
-var lastCall = Date.now();
-var isFirstStart = true;
-var timer = 4 * SECONDS;
-// -------------------------------------------------------
-var wakeup = setInterval(Highlander, timer);
-// -------------------------------------------------------
-
 //接口循环定时器
 let timesList: any = [];
 //实时更新数据的按钮
@@ -199,54 +188,6 @@ const closePopupFun = async () => {
   clearTimeoutList(timesList);
 };
 
-async function Highlander() {
-  const now = Date.now();
-  const age = now - lastCall;
-
-  console.log(
-    `(DEBUG Highlander) ------------- time elapsed from first start: ${convertNoDate(
-      age,
-    )}`,
-  );
-  if (alivePort == null) {
-    alivePort = chrome.runtime.connect({ name: INTERNAL_STAYALIVE_PORT });
-
-    alivePort.onDisconnect.addListener((p) => {
-      if (chrome.runtime.lastError) {
-        console.log(
-          `(DEBUG Highlander) Expected disconnect (on error). SW should be still running.`,
-        );
-      } else {
-        console.log(`(DEBUG Highlander): port disconnected`);
-      }
-
-      alivePort = null;
-    });
-  }
-
-  if (alivePort) {
-    alivePort.postMessage({ content: 'ping' });
-
-    if (chrome.runtime.lastError) {
-      console.log(
-        `(DEBUG Highlander): postMessage error: ${chrome.runtime.lastError.message}`,
-      );
-    } else {
-      console.log(
-        `(DEBUG Highlander): "ping" sent through ${alivePort.name} port`,
-      );
-    }
-  }
-  //lastCall = Date.now();
-  if (isFirstStart) {
-    isFirstStart = false;
-    clearInterval(wakeup);
-    timer = 270 * SECONDS;
-    wakeup = setInterval(Highlander, timer);
-  }
-}
-
-function convertNoDate(long: any) {
-  var dt = new Date(long).toISOString();
-  return dt.slice(-13, -5); // HH:MM:SS only
-}
+const keepAlive = () => setInterval(chrome.runtime.getPlatformInfo, 20e3);
+chrome.runtime.onStartup.addListener(keepAlive);
+keepAlive();

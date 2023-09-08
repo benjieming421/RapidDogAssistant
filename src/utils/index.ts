@@ -2,15 +2,23 @@ export * from './env';
 import axios from '@/axios';
 import dayjs from 'dayjs';
 
+//base64解码
+export const base64Decode = (encode_data: any) => {
+  //base64解码
+  // let decode = window.atob(encode_data);
+  //以下是非window环境的window.atob代替方案
+  let decode = Buffer.from(encode_data, 'base64').toString('utf-8');
+  //URL解码
+  let decodeUrl = decodeURIComponent(decode);
+  let objToken = JSON.parse(decodeUrl);
+  return objToken;
+};
+
 export const getCaptcha = async () => {
   const result = await axios.get('/v1/captcha/getCaptcha');
   let objToken = <any>{};
   if (result.status == 1 && result.encode_data) {
-    //base64解码
-    let decode = window.atob(result.encode_data);
-    //URL解码
-    let decodeUrl = decodeURIComponent(decode);
-    objToken = JSON.parse(decodeUrl);
+    objToken = base64Decode(result.encode_data);
     return objToken;
   }
 };
@@ -22,11 +30,7 @@ export const verifyCaptcha = async (data: any) => {
   });
   let objToken = <any>{};
   if (result.status == 1 && result.encode_data) {
-    //base64解码
-    let decode = window.atob(result.encode_data);
-    //URL解码
-    let decodeUrl = decodeURIComponent(decode);
-    objToken = JSON.parse(decodeUrl);
+    objToken = base64Decode(result.encode_data);
     return objToken;
   }
 };

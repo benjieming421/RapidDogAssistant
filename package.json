@@ -1,6 +1,6 @@
 {
   "name": "土狗捕捉器",
-  "version": "0.0.0.2",
+  "version": "0.0.0.4",
   "private": false,
   "description": "基于 多链数据开发 的 Chrome 插件土狗行情插件 实现币圈一插件完成所有操作，不再烦恼打开多个网站进行多种数据查询",
   "homepage": "https://github.com/benjieming421/RapidDogAssistant",
