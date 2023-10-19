@@ -6,6 +6,7 @@ import {
   ispositiveAndNegativereturnColor,
   priceConverter,
   verifyCaptcha,
+  base64Decode
 } from '@/utils';
 import sessionT from '@/utils/session';
 import {
@@ -162,6 +163,7 @@ const Popup = () => {
       try {
         //测试是否联通
         let verifyData = await verifyToken();
+        // verifyData = base64Decode(verifyData.data);
         if (verifyData?.status == 1) {
           setTokendanger(false);
           chrome.runtime.connect({ name: 'popup' });
@@ -288,7 +290,7 @@ const Popup = () => {
         messageApi.open({
           key,
           type: 'error',
-          content: '请联系管理员!',
+          content: '请重试!',
           duration: 5,
         });
       }
@@ -296,7 +298,7 @@ const Popup = () => {
       messageApi.open({
         key,
         type: 'error',
-        content: '请联系管理员!',
+        content: '请重试!',
         duration: 5,
       });
       setTokendanger(true);
@@ -395,7 +397,7 @@ const Popup = () => {
   };
 
   return (
-    <>
+    <div key={pagename}>
       {pagename == 'SetPage' && <SetPage />}
       {pagename == '' && (
         <div className={styles.app}>
@@ -553,7 +555,7 @@ const Popup = () => {
           </Modal>
         </div>
       )}
-    </>
+    </div>
   );
 };
 

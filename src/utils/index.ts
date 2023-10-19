@@ -7,6 +7,7 @@ export const base64Decode = (encode_data: any) => {
   //base64解码
   // let decode = window.atob(encode_data);
   //以下是非window环境的window.atob代替方案
+  if(typeof encode_data !== 'string') return;
   let decode = Buffer.from(encode_data, 'base64').toString('utf-8');
   //URL解码
   let decodeUrl = decodeURIComponent(decode);

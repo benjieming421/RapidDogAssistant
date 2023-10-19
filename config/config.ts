@@ -15,7 +15,7 @@ export default defineConfig({
     icons: {
       128: 'logo/logo@128.png',
     },
-    host_permissions: ['https://api.vbdg.xyz/v1api/*'],
+    host_permissions: ['https://api.fgsasd.org/v1api/*'],
     permissions: ['storage', 'contextMenus'],
   },
   mpa: {

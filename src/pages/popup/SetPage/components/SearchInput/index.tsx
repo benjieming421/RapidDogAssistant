@@ -14,6 +14,7 @@ export interface DebounceSelectProps<ValueType = any>
   extends Omit<SelectProps<ValueType | ValueType[]>, 'options' | 'children'> {
   fetchOptions: (search: string) => Promise<ValueType[]>;
   debounceTimeout?: number;
+  addCoinFun?: (symbol:string,contract: string,chain: string) => void;
 }
 
 function DebounceSelect<
@@ -25,6 +26,7 @@ function DebounceSelect<
 >({
   fetchOptions,
   debounceTimeout = 800,
+  addCoinFun,
   ...props
 }: DebounceSelectProps<ValueType>) {
   const [options, setOptions] = useState<ValueType[]>([]);
@@ -64,7 +66,19 @@ function DebounceSelect<
     }
   };
 
-  const dropdownRender = () => {
+
+  const dropdownRender = (addCoinFun:any) => {
+
+    const listOnclickFunc = (item:any) => {
+      console.log(addCoinFun,'addCoinFun');
+      let data = {
+        symbol: item?.symbol,
+        contract: item?.token,
+        chain: item?.chain,
+      }
+      addCoinFun({...data});
+    };
+
     return (
       <div className={styles.dropdown}>
         {options.length == 0 && (
@@ -106,6 +120,7 @@ function DebounceSelect<
                   key={item?.current_price_usd}
                   className={styles.listitem}
                   title={'点击添加观察列表'}
+                  onClick={()=>listOnclickFunc(item)}
                 >
                   <div style={{ zIndex: 9999 }}>{index + 1}</div>
                   <div className={styles.symbolstyle}>
@@ -167,7 +182,7 @@ function DebounceSelect<
       defaultActiveFirstOption={false}
       suffixIcon={null}
       onSearch={debounceFetcher}
-      dropdownRender={dropdownRender}
+      dropdownRender={()=>dropdownRender(addCoinFun)}
       popupMatchSelectWidth={758}
       autoClearSearchValue={false}
       // open={true}

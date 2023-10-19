@@ -14,7 +14,8 @@ export const verifyToken = async (header?: {}) => {
 export const getToken = async (contract: string, chain: string) => {
   let resultData = await axios.get(`/v3/tokens/${contract}-${chain}`);
   resultData = {
-    data: base64Decode(resultData?.encode_data)
+    // data: base64Decode(resultData?.data)
+    data: JSON.parse(resultData?.data)
   }
   return resultData;
 };

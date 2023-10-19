@@ -1,7 +1,16 @@
+/*
+ * @Author: benjieming421
+ * @Date: 2023-08-28 19:57:13
+ * @LastEditTime: 2023-10-19 23:00:14
+ * @FilePath: \RapidDogAssistant\src\axios\index.tsx
+ * @Description: 
+ * 
+ * Copyright (c) 2023 by hzsdezhanghao@gmail.com, All Rights Reserved. 
+ */
 import sessionT from '@/utils/session';
 import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import axios, { Method } from 'axios';
-const baseURL = `https://api.vbdg.xyz/v1api/`;
+const baseURL = `https://api.fgsasd.org/v1api/`;
 
 const tokenReturn = async () => {
   const token = await sessionT.get('token');

@@ -145,7 +145,7 @@ if (!chrome.runtime.lastError) {
     chrome.contextMenus.create({
       id: 'myContextMenu3306',
       title: '独立窗口打开',
-      contexts: ['browser_action'],
+      contexts: ['all'],
     });
   });
 
