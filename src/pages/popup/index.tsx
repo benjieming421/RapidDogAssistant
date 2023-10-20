@@ -156,7 +156,7 @@ const Popup = () => {
   const [skeletonType, setSkeletonType] = useState<number>(0);
 
   //当前主页显示的组件名称
-  const [pagename, setPagename] = useState('');
+  const [pagename, setPagename] = useState('SetPage');
 
   useEffect(() => {
     (async () => {

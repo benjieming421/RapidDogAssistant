@@ -115,7 +115,9 @@ const EditableCell: React.FC<EditableCellProps> = ({
   const inputsave = async () => {
     try {
       let values = await form.validateFields();
-      values = {[Object.keys(values)[0]]: parseFloat(values[Object.keys(values)[0]])};
+      values = {
+        [Object.keys(values)[0]]: parseFloat(values[Object.keys(values)[0]]),
+      };
       toggleEdit();
       handleSave({ ...record, ...values });
     } catch (errInfo) {
@@ -169,52 +171,23 @@ interface DataType {
 
 type ColumnTypes = Exclude<EditableTableProps['columns'], undefined>;
 
-const App: React.FC = () => {
-  const [dataSource, setDataSource] = useState<any>([]);
+const App: React.FC = (props:any) => {
+  const [dataSource, setDataSource] = useState<any>([...props.initdataSources]);
 
   //特别关注按钮
   const [tbgz, setTbgz] = useState<any>('');
 
   useEffect(() => {
+    setDataSource(props.initdataSources)
+  },[props.initdataSources])
+
+  useEffect(() => {
     (async () => {
       //初始化特别关注
-      let tbgzType = await sessionT.get('tbgz') ?? '';
+      let tbgzType = (await sessionT.get('tbgz')) ?? '';
       setTbgz(tbgzType);
-      //初始化datasource
-      initdataSoure();
     })();
   }, []);
-
-  //从储存coinList-detail拿值给datasource
-  const initdataSoure = () => {
-    const items = setTimeout(async () => {
-      let dataSourceType = await sessionT.get('coinList-detail');
-      let datasourceFunResult = await datasourceFun(dataSourceType);
-      setDataSource(datasourceFunResult);
-
-      clearTimeout(items);
-    }, 4000);
-  };
-
-  //清洗数据返回给datasource
-  const datasourceFun = async (data: any) => {
-    let setListList = (await sessionT.get('coinList-detail-setList')) ?? {};
-    let arr: any[] = [];
-    data.forEach((item: any, index: number) => {
-      let setListSpare =
-        setListList?.[`${item?.token + '-' + item?.chain}`] ?? {};
-      let obj = {
-        key: item?.key ?? index,
-        symbol: item?.symbol ?? '-',
-        token: item?.token ?? '-',
-        chain: item?.chain ?? '未知链',
-        cysl: setListSpare?.cysl ?? 0,
-        cyjg: setListSpare?.cyjg ?? 0,
-      };
-      arr.push(obj);
-    });
-    return arr;
-  };
 
   const handleDelete = (key: React.Key) => {
     const newData = dataSource.filter((item) => item.key !== key);
@@ -254,7 +227,10 @@ const App: React.FC = () => {
       ...row,
     });
     setDataSource(newData);
-    addSession(`${item.token + '-' + item.chain}`, { cysl: row.cysl,cyjg: row.cyjg });
+    addSession(`${item.token + '-' + item.chain}`, {
+      cysl: row.cysl,
+      cyjg: row.cyjg,
+    });
   };
 
   //根据key数据保存到session -> coinList-detail 函数
@@ -308,8 +284,13 @@ const App: React.FC = () => {
         dataSourceCore.splice(tablesouceDataFindindex, 1);
         setDataSource(dataSourceCore);
 
-        delete coinListDetailSetListCore[key];
-        await sessionT.set('coinList-detail-setList', coinListDetailSetListCore);
+        if (!!coinListDetailSetListCore?.[key]) {
+          delete coinListDetailSetListCore[key];
+          await sessionT.set(
+            'coinList-detail-setList',
+            coinListDetailSetListCore,
+          );
+        }
       }
     } catch (error) {
       console.log(error, '表格icon删除失败');
@@ -335,12 +316,8 @@ const App: React.FC = () => {
       title: '代币',
       dataIndex: 'symbol',
       align: 'center',
-      render:(text, record, index) => {
-        return (
-          <span>
-            {text}/USDT
-          </span>
-        );
+      render: (text, record, index) => {
+        return <span>{text}/USDT</span>;
       },
     },
     {
@@ -363,7 +340,7 @@ const App: React.FC = () => {
       editable: true,
     },
     {
-      title: '持有数量',
+      title: '持有价格',
       dataIndex: 'cyjg',
       align: 'center',
       editable: true,
@@ -377,7 +354,9 @@ const App: React.FC = () => {
           checkedChildren="开启"
           unCheckedChildren="关闭"
           checked={tbgz == `${record.token}-${record.chain}`}
-          onClick={(checked: boolean, event) => tbgzFun(checked, `${record.token}-${record.chain}`)}
+          onClick={(checked: boolean, event) =>
+            tbgzFun(checked, `${record.token}-${record.chain}`)
+          }
         />
       ),
     },

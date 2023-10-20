@@ -1,7 +1,7 @@
 /*
  * @Author: benjieming421
  * @Date: 2023-08-28 19:57:13
- * @LastEditTime: 2023-10-20 00:51:43
+ * @LastEditTime: 2023-10-21 01:11:07
  * @FilePath: \RapidDogAssistant\src\pages\popup\SetPage\index.tsx
  * @Description:
  *
@@ -19,7 +19,13 @@ import styles from './index.less';
 const index = () => {
   const [jmhd, setJmhd] = useState<number>(0);
   const [tmd, setTmd] = useState<number>(0);
+  const [editTabledataSource, setEditTabledataSource] = useState<any>([]);
 
+  useEffect(() => {
+    (() => {
+      initdataSoure();
+    })();
+  }, []);
   useEffect(() => {
     (async () => {
       let jmhd_hc = (await sessionT.get('jmhd')) ?? 0;
@@ -68,16 +74,30 @@ const index = () => {
     try {
       let coinList: any = await sessionT.get('coinList');
       let result = isRepalce(data, coinList);
-      if(result) {
+      if (result) {
         coinList.push({ ...data });
         await sessionT.set('coinList', coinList);
+        addeditTabledataSourceFun(data);
         message.success(`添加代币 ${data?.symbol} 成功`);
-      }else {
-        message.error(`代币 ${data?.symbol} 已经存在`); 
+      } else {
+        message.error(`代币 ${data?.symbol} 已经存在`);
       }
     } catch (error) {
       message.error(`添加代币 ${data?.symbol} 失败`);
     }
+  };
+
+  //给editTabledataSource加代币数据，让表格直接刷新出来
+  const addeditTabledataSourceFun = (data:any) => {
+    let obj = {
+      token: data.contract,
+      symbol: data.symbol,
+      key: `${data.contract}-${data.chain}`,
+      cysl: 0,
+      cyjg: 0,
+      chain: data.chain,
+    };
+    setEditTabledataSource((editTabledataSource:any) => [...editTabledataSource, obj]);
   };
 
   //判断是否已经存在代币 true代表不存在 false代表代币已经存在
@@ -92,6 +112,34 @@ const index = () => {
       }
     }
     return result;
+  };
+
+  //清洗数据返回给datasource
+  const datasourceFun = async (data: any) => {
+    let setListList = (await sessionT.get('coinList-detail-setList')) ?? {};
+    let arr: any[] = [];
+    data.forEach((item: any, index: number) => {
+      let setListSpare =
+        setListList?.[`${item?.token + '-' + item?.chain}`] ?? {};
+      let obj = {
+        key: item?.key ?? index,
+        symbol: item?.symbol ?? '-',
+        token: item?.token ?? '-',
+        chain: item?.chain ?? '未知链',
+        cysl: setListSpare?.cysl ?? 0,
+        cyjg: setListSpare?.cyjg ?? 0,
+      };
+      arr.push(obj);
+    });
+    return arr;
+  };
+
+  //从储存coinList-detail拿值给datasource
+  const initdataSoure = async () => {
+    let dataSourceType = await sessionT.get('coinList-detail');
+    let datasourceFunResult = await datasourceFun(dataSourceType);
+    setEditTabledataSource(datasourceFunResult);
+    console.log('datasourceFunResult', datasourceFunResult);
   };
 
   return (
@@ -110,7 +158,7 @@ const index = () => {
         />
       </div>
       <div className={styles.edittable}>
-        <EditTable />
+        <EditTable initdataSources={editTabledataSource} />
       </div>
       <div className={styles.sbms}>
         <div className={styles.title}>上班模式设置：</div>
