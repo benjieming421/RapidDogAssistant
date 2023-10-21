@@ -1,7 +1,7 @@
 /*
  * @Author: benjieming421
  * @Date: 2023-08-28 19:57:13
- * @LastEditTime: 2023-10-21 01:11:07
+ * @LastEditTime: 2023-10-21 15:31:01
  * @FilePath: \RapidDogAssistant\src\pages\popup\SetPage\index.tsx
  * @Description:
  *
@@ -9,18 +9,19 @@
  */
 import { searchToken } from '@/axios/api';
 import sessionT from '@/utils/session';
-import { message, Slider } from 'antd';
+import { message, Slider,Button } from 'antd';
 import throttle from 'lodash.throttle';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import EditTable from './components/EditTable';
 import DebounceSelect from './components/SearchInput';
 import styles from './index.less';
 
-const index = () => {
+const index = ({setPagename}:any) => {
   const [jmhd, setJmhd] = useState<number>(0);
   const [tmd, setTmd] = useState<number>(0);
   const [editTabledataSource, setEditTabledataSource] = useState<any>([]);
 
+  const tableRef = useRef<any>(null);
   useEffect(() => {
     (() => {
       initdataSoure();
@@ -142,6 +143,12 @@ const index = () => {
     console.log('datasourceFunResult', datasourceFunResult);
   };
 
+  //对表格操作完的完成按钮 执行子组件的函数（handleSaveOperation）
+  const completeFun = () => {
+    tableRef.current.handleSaveOperation();
+    setPagename('');
+  };
+
   return (
     <div className={styles.setpage}>
       <div className={styles.search_content}>
@@ -158,7 +165,7 @@ const index = () => {
         />
       </div>
       <div className={styles.edittable}>
-        <EditTable initdataSources={editTabledataSource} />
+        <EditTable initdataSources={editTabledataSource} ref={tableRef}/>
       </div>
       <div className={styles.sbms}>
         <div className={styles.title}>上班模式设置：</div>
@@ -183,6 +190,7 @@ const index = () => {
             />
           </div>
         </div>
+        <Button onClick={completeFun}>完成</Button>
       </div>
     </div>
   );

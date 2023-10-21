@@ -10,12 +10,21 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useGetState } from 'ahooks';
 import type { InputRef } from 'antd';
 import { Button, Form, Input, message, Switch, Table } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import type { ColumnsType } from 'antd/es/table';
 import clonedeep from 'lodash.clonedeep';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, {
+  forwardRef,
+  useCallback,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import styles from './index.less';
 
 const EditableContext = React.createContext<FormInstance<any> | null>(null);
@@ -171,15 +180,30 @@ interface DataType {
 
 type ColumnTypes = Exclude<EditableTableProps['columns'], undefined>;
 
-const App: React.FC = (props:any) => {
-  const [dataSource, setDataSource] = useState<any>([...props.initdataSources]);
+const App: React.FC = forwardRef((props: any, ref: any) => {
+  const [dataSource, setDataSource, getDataSource] = useGetState<any>([
+    ...props.initdataSources,
+  ]);
 
   //特别关注按钮
   const [tbgz, setTbgz] = useState<any>('');
 
+  const coreDragEndData = useRef<any>([]);
+
+  //对父组件暴露的子组件方法
+  useImperativeHandle(
+    ref,
+    () => {
+      return {
+        handleSaveOperation: handleSaveOperation,
+      };
+    },
+    [],
+  );
+
   useEffect(() => {
-    setDataSource(props.initdataSources)
-  },[props.initdataSources])
+    setDataSource(props.initdataSources);
+  }, [props.initdataSources]);
 
   useEffect(() => {
     (async () => {
@@ -247,9 +271,27 @@ const App: React.FC = (props:any) => {
     }
   };
 
-  //删除代币列表 根据token（contract）-chain 生成key值查找删除
-  const delectSomeCoinList = async (key: string) => {
+  //删除代币列表 不存入缓存
+  const delectSomeCoinList_nosession = async (key: string) => {
+    let dataSourceCore = clonedeep(dataSource);
+    let tablesouceDataFindindex = dataSourceCore.findIndex(
+      (idx: any) => `${idx?.token}-${idx?.chain}` === key,
+    );
+    tablesouceDataFindindex !== -1 &&
+      dataSourceCore.splice(tablesouceDataFindindex, 1);
+    setDataSource(dataSourceCore);
+  };
+
+  useEffect(() => {
+    console.log(dataSource, 'dataSource值的变化');
+  }, [dataSource]);
+
+  // 需要解决的是 根据dataSource的数据进行缓存数据的删除
+  //功能：删除代币列表 根据token（contract）-chain 生成key值查找删除 存入缓存
+  const delectSomeCoinList_addsession = useCallback(async () => {
     try {
+      let dataSourceCore = clonedeep(getDataSource());
+
       let coinList = await sessionT.get('coinList');
       let coinListDetail = await sessionT.get('coinList-detail');
       let coinListDetailSetList = await sessionT.get('coinList-detail-setList');
@@ -257,46 +299,39 @@ const App: React.FC = (props:any) => {
       let coinListobjCore = clonedeep(coinList);
       let coinListDetailCore = clonedeep(coinListDetail);
       let coinListDetailSetListCore = clonedeep(coinListDetailSetList);
-      let dataSourceCore = clonedeep(dataSource);
 
-      let bgfindindex = coinListobjCore.findIndex(
-        (idx: any) => `${idx?.contract}-${idx?.chain}` === key,
-      );
-      let coinListDetailFindindex = coinListDetailCore.findIndex(
-        (idx: any) => `${idx?.token}-${idx?.chain}` === key,
-      );
-      let tablesouceDataFindindex = dataSource.findIndex(
-        (idx: any) => `${idx?.token}-${idx?.chain}` === key,
-      );
+      let coinListobjCore_back = [];
+      let coinListDetailCore_back = [];
+      let coinListDetailSetListCore_back: any = {};
 
-      if (
+      for (let i = 0; i < dataSourceCore.length; i++) {
+        let key = dataSourceCore[i].token + '-' + dataSourceCore[i].chain;
+
+        let bgfindindex = coinListobjCore.findIndex(
+          (idx: any) => `${idx?.contract}-${idx?.chain}` === key,
+        );
         bgfindindex !== -1 &&
-        tablesouceDataFindindex !== -1 &&
-        coinListDetailFindindex !== -1
-      ) {
-        //默认请求列表删除
-        coinListobjCore.splice(bgfindindex, 1);
-        await sessionT.set('coinList', coinListobjCore);
+          coinListobjCore_back.push(coinListobjCore[bgfindindex]);
 
-        coinListDetailCore.splice(coinListDetailFindindex, 1);
-        await sessionT.set('coinList-detail', coinListDetailCore);
-
-        dataSourceCore.splice(tablesouceDataFindindex, 1);
-        setDataSource(dataSourceCore);
-
-        if (!!coinListDetailSetListCore?.[key]) {
-          delete coinListDetailSetListCore[key];
-          await sessionT.set(
-            'coinList-detail-setList',
-            coinListDetailSetListCore,
+        let coinListDetailFindindex = coinListDetailCore.findIndex(
+          (idx: any) => `${idx?.token}-${idx?.chain}` === key,
+        );
+        coinListDetailFindindex !== -1 &&
+          coinListDetailCore_back.push(
+            coinListDetailCore[coinListDetailFindindex],
           );
+
+        if (coinListDetailSetListCore?.[key]) {
+          coinListDetailSetListCore_back.key = coinListDetailSetListCore[key];
         }
       }
+      await sessionT.set('coinList', coinListobjCore_back);
+      await sessionT.set('coinList-detail', coinListDetailCore_back);
+      await sessionT.set('coinList-detail-setList', coinListDetailSetListCore_back);
     } catch (error) {
-      console.log(error, '表格icon删除失败');
-      message.error('删除失败');
+      message.error('执行删除代码失败，保存表格失败');
     }
-  };
+  }, [dataSource]);
 
   const components = {
     body: {
@@ -367,7 +402,9 @@ const App: React.FC = (props:any) => {
       render: (text, record, index) => (
         <Button
           type="text"
-          onClick={() => delectSomeCoinList(`${record.token}-${record.chain}`)}
+          onClick={() =>
+            delectSomeCoinList_nosession(`${record.token}-${record.chain}`)
+          }
         >
           <span style={{ color: '#1677ff' }} title="点击删除">
             delete
@@ -393,7 +430,7 @@ const App: React.FC = (props:any) => {
     };
   });
 
-  const onDragEnd = async ({ active, over }: DragEndEvent) => {
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (active.id !== over?.id) {
       let core: any = [];
       setDataSource((previous: any) => {
@@ -403,20 +440,30 @@ const App: React.FC = (props:any) => {
         console.log(core, 'dataSource 移动的数据');
         return core;
       });
-
-      //coinListRef.current数据根据key值按照core的key值排序
-      let coinList = await sessionT.get('coinList');
-      let coinListobj = clonedeep(coinList);
-      let coinListRefCurrentObj: Array<any> = [];
-      core.forEach((d: any) => {
-        let result = coinListobj.filter(
-          (idx: any) => `${idx?.contract}-${idx?.chain}` === d.key,
-        );
-        coinListRefCurrentObj.push(result?.[0] ?? {});
-      });
-      await sessionT.set('coinList', coinListRefCurrentObj);
-      console.log(coinListRefCurrentObj, 'coinList 移动后的默认列表数据');
+      coreDragEndData.current = core;
     }
+  };
+
+  //保存对拖拽的操作 存入缓存
+  const handleSaveDrag_addsession = async () => {
+    //coinListRef.current数据根据key值按照core的key值排序
+    let coinList = await sessionT.get('coinList');
+    let coinListobj = clonedeep(coinList);
+    let coinListRefCurrentObj: Array<any> = [];
+    coreDragEndData.current.forEach((d: any) => {
+      let result = coinListobj.filter(
+        (idx: any) => `${idx?.contract}-${idx?.chain}` === d.key,
+      );
+      coinListRefCurrentObj.push(result?.[0] ?? {});
+    });
+    await sessionT.set('coinList', coinListRefCurrentObj);
+    console.log(coinListRefCurrentObj, 'coinList 移动后的默认列表数据');
+  };
+
+  //保存对表格的操作init
+  const handleSaveOperation = () => {
+    handleSaveDrag_addsession();
+    delectSomeCoinList_addsession();
   };
 
   return (
@@ -440,6 +487,6 @@ const App: React.FC = (props:any) => {
       </SortableContext>
     </DndContext>
   );
-};
+});
 
 export default App;
